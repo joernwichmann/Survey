@@ -34,7 +34,7 @@ from configs import lid_driven_global as gcf
 
 def generate_one(time_disc: TimeDiscretisation,
                  space_disc: SpaceDiscretisation,
-                 noise_coefficient: Function,
+                 noise_coefficients: list[Function],
                  initial_velocity: Function,
                  initial_pressure: Function,
                  boundary_condition: Function,
@@ -51,13 +51,17 @@ def generate_one(time_disc: TimeDiscretisation,
     
     Return noise and solution."""
     ### Generate noise on all refinement levels
-    ref_to_noise_increments = sampling_strategy(time_disc.refinement_levels,time_disc.initial_time,time_disc.end_time)
+    noise_coeff_to_ref_to_noise_increments: dict[Function,dict[int,list[floats]]] = {noise_coeff: sampling_strategy(time_disc.refinement_levels,time_disc.initial_time,time_disc.end_time) 
+                               for noise_coeff in noise_coefficients}
     ### initialise storage 
     ref_to_time_to_velocity = dict()
     ref_to_time_to_velocity_midpoints = dict()
     ref_to_time_to_pressure = dict()
     ref_to_time_to_pressure_midpoints = dict()
-    for level in ref_to_noise_increments: 
+    for level in time_disc.refinement_levels:
+        ### select noise_increments relative to refinement level
+        noise_coeff_to_noise_increments = {noise_coeff: noise_coeff_to_ref_to_noise_increments[noise_coeff][level] 
+                                           for noise_coeff in noise_coefficients}
         ### Solve algebraic system
         (ref_to_time_to_velocity[level],
          ref_to_time_to_pressure[level],
@@ -65,8 +69,7 @@ def generate_one(time_disc: TimeDiscretisation,
          ref_to_time_to_pressure_midpoints[level])  = algorithm(
             space_disc=space_disc,
             time_grid=time_disc.ref_to_time_grid[level],
-            noise_steps= ref_to_noise_increments[level],
-            noise_coefficient=noise_coefficient,
+            noise_coeff_to_noise_increments= noise_coeff_to_noise_increments,
             initial_velocity=initial_velocity,
             initial_pressure=initial_pressure,
             boundary_condition=boundary_condition,
@@ -75,7 +78,7 @@ def generate_one(time_disc: TimeDiscretisation,
             time_to_det_forcing = ref_to_time_to_det_forcing[level],
             Reynolds_number=1
             )
-    return (ref_to_noise_increments,
+    return (noise_coeff_to_ref_to_noise_increments,
             ref_to_time_to_velocity,
             ref_to_time_to_pressure,
             ref_to_time_to_velocity_midpoints,
@@ -114,9 +117,19 @@ def generate(deterministic: bool = False) -> None:
 
     ### noise coefficient
     logging.info(f"\nNOISE COEFFICIENT:\t{gcf.NOISE_COEFFICIENT_NAME}\nNOISE INTENSITY:\t{gcf.NOISE_INTENSITY}")
-    noise_coefficient = gcf.NOISE_INTENSITY*get_function(gcf.NOISE_COEFFICIENT_NAME,space_disc,gcf.NOISE_FREQUENZY_X,gcf.NOISE_FREQUENZY_Y)
+    noise_coefficients_prescaled = get_function(gcf.NOISE_COEFFICIENT_NAME,space_disc,gcf.NOISE_FREQUENZY_X,gcf.NOISE_FREQUENZY_Y)
+    noise_coefficients = [gcf.NOISE_INTENSITY*noise_coefficient for noise_coefficient in noise_coefficients_prescaled]
+    
+
     if deterministic:
-        noise_coefficient = Function(space_disc.velocity_space)
+        print(f"length of noise coefficient list: \t{len(noise_coefficients)}")
+        #plotting of noise coefficients
+        ncplot = Function(space_disc.velocity_space)
+        for k, noise_coefficient in enumerate(noise_coefficients):
+            ncplot.assign(noise_coefficient)
+            outfile = File(f"noise_coefficients/nc_{k}.pvd")
+            outfile.write(ncplot)
+        noise_coefficients = [Function(space_disc.velocity_space)]
 
     ### boundary condition
     logging.info(f"\nEXPLICIT BOUNDARY CONDITION:\t{gcf.BOUNDARY_CONDITION_EXPLICIT_NAME}\nBC INTENSITY:\t{gcf.BOUNDARY_CONDITION_EXPLICIT_INTENSITY}")
@@ -212,7 +225,7 @@ def generate(deterministic: bool = False) -> None:
          ref_to_time_to_velocity_midpoints, 
          ref_to_time_to_pressure_midpoints) = generate_one(time_disc=time_disc,
                                                            space_disc=space_disc,
-                                                           noise_coefficient=noise_coefficient,
+                                                           noise_coefficients=noise_coefficients,
                                                            initial_velocity=initial_velocity,
                                                            initial_pressure=initial_pressure,
                                                            boundary_condition=boundary_condition,
