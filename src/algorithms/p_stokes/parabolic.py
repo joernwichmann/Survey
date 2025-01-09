@@ -28,9 +28,8 @@ def get_algorithm_by_name(algorithm_name: str) -> pStokesAlgorithm:
 
 ### implementations of abstract structure
 def CrankNicolson_mixedFEM_strato_transportNoise_withAntisym(space_disc: SpaceDiscretisation,
-                           time_grid: list[float],
-                           noise_steps: list[float], 
-                           noise_coefficient: Function,
+                           time_grid: list[float], 
+                           noise_coeff_to_noise_increments: dict[Function,list[int]],
                            initial_condition: Function,
                            p_value: float = 2.0,
                            kappa_value: float = 0.1,
@@ -42,7 +41,7 @@ def CrankNicolson_mixedFEM_strato_transportNoise_withAntisym(space_disc: SpaceDi
     # initialise constants in variational form
     Re = Constant(Reynolds_number)
     tau = Constant(1.0)
-    dW = Constant(1.0)
+    noise_coeff_to_dW = {noise_coeff: Constant(1.0) for noise_coeff in noise_coeff_to_noise_increments}
 
     # initialise function objects
     v, q = TestFunctions(space_disc.mixed_space)
@@ -65,9 +64,11 @@ def CrankNicolson_mixedFEM_strato_transportNoise_withAntisym(space_disc: SpaceDi
         inner(u - uold,v) 
         + tau*( 1.0/Re*inner( S_tensor_sym((grad(u) + grad(uold))/2.0,p_value,kappa_value), epsilon(grad(v))) - inner(p, div(v)) + inner(div(u), q) )
         - tau*inner(det_forcing,v)
-        - dW/4.0*inner(dot(grad(u) + grad(uold), noise_coefficient), v)
-        + dW/4.0*inner(dot(grad(v), noise_coefficient), u + uold)
         )*dx
+    
+    for noise_coeff in noise_coeff_to_noise_increments:
+        VariationalForm = VariationalForm - noise_coeff_to_dW[noise_coeff]/4.0*inner(dot(grad(u) + grad(uold), noise_coeff), v)*dx
+        VariationalForm = VariationalForm + noise_coeff_to_dW[noise_coeff]/4.0*inner(dot(grad(v), noise_coeff), u + uold)*dx
 
     # setup initial time and time increments
     initial_time, time_increments = trajectory_to_incremets(time_grid)
@@ -85,16 +86,10 @@ def CrankNicolson_mixedFEM_strato_transportNoise_withAntisym(space_disc: SpaceDi
     time_to_pressure[time] = deepcopy(pold)
     time_to_pressure_midpoints[time] = deepcopy(pold)
 
-    #check if deterministic and random increments are iterables of the same length
-    if not len(time_increments) == len(noise_steps):
-        msg_error = "Time grid and noise grid are not of the same length.\n"
-        msg_error += f"Time grid length: \t {len(time_increments)}\n"
-        msg_error += f"Noise grid length: \t {len(noise_steps)}"
-        raise ValueError(msg_error)
-
     for index in tqdm(range(len(time_increments))):
         # update random and deterministc time step, and nodal time
-        dW.assign(noise_steps[index])
+        for noise_coeff in noise_coeff_to_noise_increments:
+            noise_coeff_to_dW[noise_coeff].assign(noise_coeff_to_noise_increments[noise_coeff][index])
         tau.assign(time_increments[index])
         time += time_increments[index]
         
@@ -136,8 +131,7 @@ def CrankNicolson_mixedFEM_strato_transportNoise_withAntisym(space_disc: SpaceDi
 ### CAREFUL: lid driven solver additionally gets boundary conditions as input
 def lid_driven_cavity_solver(space_disc: SpaceDiscretisation,
                            time_grid: list[float],
-                           noise_steps: list[float], 
-                           noise_coefficient: Function,
+                           noise_coeff_to_noise_increments: dict[Function,list[int]],
                            initial_velocity: Function,
                            initial_pressure: Function,
                            boundary_condition: Function,
@@ -151,7 +145,7 @@ def lid_driven_cavity_solver(space_disc: SpaceDiscretisation,
     # initialise constants in variational form
     Re = Constant(Reynolds_number)
     tau = Constant(1.0)
-    dW = Constant(1.0)
+    noise_coeff_to_dW = {noise_coeff: Constant(1.0) for noise_coeff in noise_coeff_to_noise_increments}
 
     # initialise function objects
     v, q = TestFunctions(space_disc.mixed_space)
@@ -176,10 +170,12 @@ def lid_driven_cavity_solver(space_disc: SpaceDiscretisation,
         + tau*( 1.0/Re*inner( S_tensor_sym((grad(u) + grad(uold))/2.0 + grad(boundary_condition),p_value,kappa_value), epsilon(grad(v))) )
         - inner(p - pold, div(v)) + inner(div(u) - div(boundary_condition), q)
         - tau*inner(det_forcing,v)
-        - dW/4.0*inner(dot(grad(u) + grad(uold), noise_coefficient), v)
-        + dW/4.0*inner(dot(grad(v), noise_coefficient), u + uold)
-        - dW*inner(dot(grad(boundary_condition), noise_coefficient), v)
         )*dx
+    
+    for noise_coeff in noise_coeff_to_noise_increments:
+        VariationalForm = VariationalForm - noise_coeff_to_dW[noise_coeff]/4.0*inner(dot(grad(u) + grad(uold), noise_coeff), v)*dx
+        VariationalForm = VariationalForm + noise_coeff_to_dW[noise_coeff]/4.0*inner(dot(grad(v), noise_coeff), u + uold)*dx
+        VariationalForm = VariationalForm - noise_coeff_to_dW[noise_coeff]*inner(dot(grad(boundary_condition), noise_coeff), v)*dx
 
     # setup initial time and time increments
     initial_time, time_increments = trajectory_to_incremets(time_grid)
@@ -197,16 +193,10 @@ def lid_driven_cavity_solver(space_disc: SpaceDiscretisation,
     time_to_pressure[time] = deepcopy(pold)
     time_to_pressure_midpoints[time] = deepcopy(pold)
 
-    #check if deterministic and random increments are iterables of the same length
-    if not len(time_increments) == len(noise_steps):
-        msg_error = "Time grid and noise grid are not of the same length.\n"
-        msg_error += f"Time grid length: \t {len(time_increments)}\n"
-        msg_error += f"Noise grid length: \t {len(noise_steps)}"
-        raise ValueError(msg_error)
-
     for index in tqdm(range(len(time_increments))):
         # update random and deterministc time step, and nodal time
-        dW.assign(noise_steps[index])
+        for noise_coeff in noise_coeff_to_noise_increments:
+            noise_coeff_to_dW[noise_coeff].assign(noise_coeff_to_noise_increments[noise_coeff][index])
         tau.assign(time_increments[index])
         time += time_increments[index]
         
