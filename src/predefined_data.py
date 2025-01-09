@@ -31,6 +31,8 @@ def get_function(name_requested_function: str, space_disc: SpaceDiscretisation,
             return _solenoidal(j=index_x,k=index_y,mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
         case "polynomial":
             return _polynomial(mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
+        case "polynomial - truncated":
+            return _polynomial_truncated2Unitsquare(mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
         case "polynomial - no BC":
             return _polynomial_non_bc(mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
         case "polynomial - no div":
@@ -47,6 +49,11 @@ def get_function(name_requested_function: str, space_disc: SpaceDiscretisation,
             return _lid_driven_weak(mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
         case "lid-driven-strong":
             return _lid_driven_strong(mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
+        case "vortices - prescribed level":
+            return _generate_vortices_on_level(level=0,mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
+        case "vortices - up to level":
+            return _generate_vortices_up_to_level(end_level=2,mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
+        
         
         ### Stokes projected functions
         ## returns velocity and pressure
@@ -202,6 +209,89 @@ def _polynomial_non_div(mesh: MeshGeometry, velocity_space: FunctionSpace) -> Fu
         scaling*(-y*y*(1-y)*(1-y)*(2-6*x+4*x*x)*x + x*(1-x)*y*(1-y))
         ])
     return project(expr, velocity_space)
+
+def _isInUnitInterval(x, tol:float = 1e-10) -> bool:
+    #check if bigger 0 (up to tolerance)
+    isAboveZero = conditional(gt(x,0.0 - tol), 1, 0)
+    #check if smaller 1 (up to tolerance)
+    isBelowOne = conditional(lt(x,1.0 + tol), 1, 0)
+    return isAboveZero*isBelowOne
+
+def _isInUnitSquare(x, y, tol: float = 1e-10) -> bool:
+    #check if x is in unit interval (up to tolerance)
+    isXinInterval = _isInUnitInterval(x, tol = tol)
+    #check if y is in unit interval (up to tolerance)
+    isYinInterval = _isInUnitInterval(y, tol = tol)
+    return isXinInterval*isYinInterval
+    
+def _polynomial_truncated2Unitsquare(mesh: MeshGeometry, velocity_space: FunctionSpace) -> Function:
+    x, y = SpatialCoordinate(mesh)
+    scaling: float = 1.0
+    expr = as_vector([
+        scaling*(x*x*(1-x)*(1-x)*(2-6*y+4*y*y)*y)*_isInUnitSquare(x,y),
+        scaling*(-y*y*(1-y)*(1-y)*(2-6*x+4*x*x)*x)*_isInUnitSquare(x,y)
+        ])
+    return project(expr, velocity_space)
+
+def _square2Unitsquare(x0,y0,sidelength,x,y):
+    """ Affine linear transformation of square to unit-square. 
+    Inputs:
+        Parameters:     
+            x0: float -- first coordinate of center of square
+            y0: float -- second coordinate of center of square
+            sidelength: float -- sidelength of square
+        Variables:
+            x: mesh first coordinate
+            y: mesh second coordinate
+    Outputs: evaluated transformation
+    """
+    return 1/sidelength*(x-x0) + 1/2.0, 1/sidelength*(y-y0) + 1/2.0
+
+def _unitsquare2Square(x0,y0,sidelength,x,y):
+    """ Affine linear transformation of unit-square to square. 
+    Inputs:
+        Parameters:     
+            x0: float -- first coordinate of center of square
+            y0: float -- second coordinate of center of square
+            sidelength: float -- sidelength of square
+        Variables:
+            x: mesh first coordinate
+            y: mesh second coordinate
+    Outputs: evaluated transformation
+    """
+    return sidelength*(x-1/2.0) + x0, sidelength*(y-1/2.0) + y0
+
+
+def _polynomial_truncated2Square(x0: float, y0: float, sidelength: float, mesh: MeshGeometry,velocity_space: FunctionSpace) -> Function:
+    x_pre, y_pre = SpatialCoordinate(mesh)
+    x, y = _square2Unitsquare(x0,y0,sidelength,x_pre,y_pre)
+    scaling: float = 1.0
+    expr = as_vector([
+        scaling*(x*x*(1-x)*(1-x)*(2-6*y+4*y*y)*y)*_isInUnitSquare(x,y),
+        scaling*(-y*y*(1-y)*(1-y)*(2-6*x+4*x*x)*x)*_isInUnitSquare(x,y)
+        ])
+    return project(expr, velocity_space)
+
+def _generate_vortices_on_level(level: int, mesh: MeshGeometry, velocity_space: FunctionSpace) -> list[Function]:
+    """Generate a list of firedrake.Function corresponding to the vortices of the requested level."""
+    vortices_on_level = []
+    lengthscale = 1/(level + 1)
+    for x_index in range(level+1):
+        x0 = (2*x_index + 1)/(2*(level+1))
+        for y_index in range(level+1):
+            y0 = (2*y_index + 1)/(2*(level+1))
+            vortices_on_level.append(_polynomial_truncated2Square(x0,y0,lengthscale,mesh,velocity_space))
+    return vortices_on_level
+
+def _generate_vortices_up_to_level(end_level: int, mesh: MeshGeometry, velocity_space: FunctionSpace) -> list[Function]:
+    """Generate a list of firedrake.Function corresponding to the vortices up to the requested end_level. Higher levels have smaller magnitudes"""
+    vortices_on_level = []
+    for level in range(end_level+1):
+        for vortex in _generate_vortices_on_level(level,mesh,velocity_space):
+            #vortices_on_level.append(10**(-level)*vortex)
+            vortices_on_level.append(vortex)
+    return vortices_on_level
+            
 
 def _lid_driven_weak(mesh: MeshGeometry, velocity_space: FunctionSpace) -> Function:
     x, y = SpatialCoordinate(mesh)
