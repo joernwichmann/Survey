@@ -127,7 +127,7 @@ def generate(deterministic: bool = False) -> None:
         ncplot = Function(space_disc.velocity_space)
         for k, noise_coefficient in enumerate(noise_coefficients):
             ncplot.assign(noise_coefficient)
-            outfile = File(f"noise_coefficients/nc_{k}.pvd")
+            outfile = File(f"noise_coefficients/{cf.NAME_EXPERIMENT}/nc_{k}.pvd")
             outfile.write(ncplot)
         noise_coefficients = [Function(space_disc.velocity_space)]
 
