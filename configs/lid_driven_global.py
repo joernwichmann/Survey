@@ -19,7 +19,7 @@ FORCING_INTENSITY: float = 100
 # Time
 INITIAL_TIME: float = 0
 END_TIME: float = 1
-REFINEMENT_LEVELS: list[int] = list(range(7,10))
+REFINEMENT_LEVELS: list[int] = list(range(9,10))
 
 # Initial data
 INITIAL_CONDITION_NAME: str = "zero"    #see 'src.predefined_data' for available choices
@@ -49,7 +49,7 @@ NOISE_INCREMENTS: str = "classical" # see 'src.noise' for available choices
 
 # Noise coefficient
 NOISE_INTENSITY: float = 1000
-NOISE_COEFFICIENT_NAME: str = "polynomial" #see 'src.predefined_data' for available choices
+NOISE_COEFFICIENT_NAME: str = "vortices - up to level" #see 'src.predefined_data' for available choices
 NOISE_FREQUENZY_X: int = 2
 NOISE_FREQUENZY_Y: int = 4
 
@@ -72,10 +72,10 @@ IND_ENERGY_NUMBER: int = 100
 STATISTICS_CHECK: bool = True
 
 #Point statistics
-POINT_STATISTICS_CHECK: bool = True
+POINT_STATISTICS_CHECK: bool = False
 POINT: list[float] = [1/2.0,3/4.0]
 IND_POINT_STATISTICS_CHECK_NUMBER: int = 100
 
 #Increment check
-INCREMENT_CHECK: bool = True
+INCREMENT_CHECK: bool = False
 

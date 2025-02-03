@@ -114,7 +114,7 @@ def generate(deterministic: bool = False) -> None:
 
     ### noise coefficient
     logging.info(f"\nNOISE COEFFICIENT:\t{gcf.NOISE_COEFFICIENT_NAME}\nNOISE INTENSITY:\t{gcf.NOISE_INTENSITY}")
-    noise_coefficients_prescaled = [get_function(gcf.NOISE_COEFFICIENT_NAME,space_disc,gcf.NOISE_FREQUENZY_X,gcf.NOISE_FREQUENZY_Y)]
+    noise_coefficients_prescaled = get_function(gcf.NOISE_COEFFICIENT_NAME,space_disc,gcf.NOISE_FREQUENZY_X,gcf.NOISE_FREQUENZY_Y)
     noise_coefficients = [gcf.NOISE_INTENSITY*noise_coefficient for noise_coefficient in noise_coefficients_prescaled]
     
 
