@@ -7,7 +7,7 @@ from tools import read_datafile, organize_output
 
 
 ### select the experiments whose data will be visualised 
-from configs import p_variation as cf
+from configs import lid_driven as cf
  
 if __name__=="__main__":
 
@@ -31,9 +31,9 @@ if __name__=="__main__":
         if cf.LINEAR_PLOT:
             print(f'\tGenerating linear plot of histogram') 
             plt.figure()
-            sns.histplot(all_data[expID], bins="auto", stat="probability", kde=True, color=cf.COLOURS_MEAN[expID], log_scale=(cf.HIST_XAXIS_LOG,False))
+            sns.histplot(all_data[expID], bins="auto", stat="density", kde=True, color=cf.COLOURS_MEAN[expID], log_scale=(cf.HIST_XAXIS_LOG,False))
             plt.xlabel("Kinetic energy",fontsize=cf.LABEL_FONTSIZE)
-            plt.ylabel("Probability",fontsize=cf.LABEL_FONTSIZE)
+            plt.ylabel("Density",fontsize=cf.LABEL_FONTSIZE)
             plt.yticks(fontsize=cf.TICK_FONTSIZE)
             plt.xticks(fontsize=cf.TICK_FONTSIZE)
             plt.tight_layout()
@@ -44,7 +44,7 @@ if __name__=="__main__":
         if cf.LOG_PLOT:
             print(f'\tGenerating log plot of histogram') 
             plt.figure()
-            sns.histplot(all_data[expID], bins="auto", stat="probability", kde=True, color=cf.COLOURS_MEAN[expID], log_scale=(True,True))
+            sns.histplot(all_data[expID], bins="auto", stat="density", kde=True, color=cf.COLOURS_MEAN[expID], log_scale=(True,True))
             plt.xlabel("Kinetic energy")
             plt.tight_layout()
             plt.savefig(cf.OUTPUT_LOCATION+f"hist-{cf.EXPERIMENTS[expID]}-log.{cf.HIST_FILEFORMAT}",dpi=cf.HIST_DPI)
@@ -63,7 +63,7 @@ if __name__=="__main__":
         print(f'\tGenerating linear plot of histogram')
         plt.figure()
         for expID in cf.EXPERIMENTS.keys():
-            sns.histplot(all_data[expID], bins="auto", stat="probability", kde=True, color=cf.COLOURS_MEAN[expID], log_scale=(cf.HIST_XAXIS_LOG,False))
+            sns.histplot(all_data[expID], bins="auto", stat="density", kde=True, color=cf.COLOURS_MEAN[expID], log_scale=(cf.HIST_XAXIS_LOG,False))
             #plt.vlines(x=cf.STATIONARY_ENERGY[noise],ymin=0,ymax=cf.YMAX[noise],colors="black",linestyles="solid")
         plt.xlabel("Kinetic energy")
         #plt.legend(legendMarkers,legendPvalues)
@@ -76,7 +76,7 @@ if __name__=="__main__":
         print(f'\tGenerating log plot of histogram')
         plt.figure()
         for expID in cf.EXPERIMENTS.keys():
-            sns.histplot(all_data[expID], bins="auto", stat="probability", kde=True, color=cf.COLOURS_MEAN[expID], log_scale=(True,True))
+            sns.histplot(all_data[expID], bins="auto", stat="density", kde=True, color=cf.COLOURS_MEAN[expID], log_scale=(True,True))
             #plt.vlines(x=cf.STATIONARY_ENERGY[noise],ymin=0,ymax=cf.YMAX[noise],colors="black",linestyles="solid")
         plt.xlabel("Kinetic energy")
         plt.legend(legendMarkers,legendPvalues)

@@ -5,7 +5,7 @@ from tqdm import tqdm
 import os
 
 ### select the experiments whose data will be visualised 
-from configs import p_variation as cf
+from configs import lid_driven as cf
 
 if __name__=="__main__":
 

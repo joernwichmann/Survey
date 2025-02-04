@@ -7,7 +7,7 @@ import os
 from tools_point_statistics import read_datafile, organize_output_single, organize_output
  
 ### select the experiments whose data will be visualised 
-from configs import p_variation_point_statistics as cf
+from configs import lid_driven_point_statistics as cf
 
 if __name__=="__main__":
     ### create output directory
