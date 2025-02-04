@@ -7,10 +7,12 @@ from src.algorithms.p_stokes.parabolic import get_algorithm_by_name as get_pStok
 from src.algorithms.p_stokes.parabolic import pStokesAlgorithm
 from src.algorithms.navier_stokes.parabolic import get_algorithm_by_name as get_NavierStokes_algorithm
 from src.algorithms.navier_stokes.parabolic import NavierStokesAlgorithm
+from src.algorithms.p_navier_stokes.parabolic import get_algorithm_by_name as get_p_NSE_algorithm
+from src.algorithms.p_navier_stokes.parabolic import p_NSE_Algorithm
 from src.string_formatting import format_header
 
 ### abstract structure of an algorithm
-Algorithm: TypeAlias = StokesAlgorithm | pStokesAlgorithm | NavierStokesAlgorithm
+Algorithm: TypeAlias = StokesAlgorithm | pStokesAlgorithm | NavierStokesAlgorithm | p_NSE_Algorithm
 
 ### converter that maps model and algorithm names to its implementation
 def select_algorithm(model_name: str, algorithm_name: str) -> Algorithm:
@@ -25,6 +27,8 @@ def select_algorithm(model_name: str, algorithm_name: str) -> Algorithm:
             return get_pStokes_algorithm(algorithm_name)
         case "Navier--Stokes":
             return get_NavierStokes_algorithm(algorithm_name)
+        case "p-Navier--Stokes":
+            return get_p_NSE_algorithm(algorithm_name)
         case other:
             print(f"The model '{model_name}' is not available.")
             raise NotImplementedError
