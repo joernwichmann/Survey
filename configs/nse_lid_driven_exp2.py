@@ -1,6 +1,6 @@
 """Contains local parameter configuration."""
 ### Experimentname
-NAME_EXPERIMENT: str = "lid-driven_exp2"
+NAME_EXPERIMENT: str = "nse-lid-driven_exp2"
 
 ### P-VALUE
 P_VALUE = 2.0

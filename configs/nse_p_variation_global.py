@@ -68,7 +68,7 @@ IND_ENERGY_NUMBER: int = 100
 STATISTICS_CHECK: bool = True
 
 #Point statistics
-POINT_STATISTICS_CHECK: bool = True
+POINT_STATISTICS_CHECK: bool = False
 POINT_1: list[float] = [1/2.0,3/4.0]
 POINT_2: list[float] = [1/8.0,1/8.0]
 POINT_3: list[float] = [7/8.0,7/8.0]
