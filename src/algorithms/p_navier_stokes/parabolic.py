@@ -169,7 +169,7 @@ def lid_driven_cavity_solver(space_disc: SpaceDiscretisation,
     VariationalForm = ( 
         inner(u - uold,v) 
         + tau*( 1.0/Re*inner( S_tensor_sym((grad(u) + grad(uold))/2.0 + grad(boundary_condition),p_value,kappa_value), epsilon(grad(v))) )
-        + tau/4.0*( inner(dot(grad(u) + grad(uold), u + uold), v) - inner(dot(grad(v), u + uold),u + uold) )
+        + tau/4.0*( inner(dot(grad(u) + grad(uold) + grad(boundary_condition), u + uold + boundary_condition), v) - inner(dot(grad(v), u + uold + boundary_condition),u + uold + boundary_condition) )
         - inner(p - pold, div(v)) + inner(div(u) - div(boundary_condition), q)
         - tau*inner(det_forcing,v)
         )*dx
