@@ -187,7 +187,9 @@ def generate(deterministic: bool = False) -> None:
 
     if gcf.POINT_STATISTICS_CHECK:
         point_statistics_velocity = ProcessManager([
-            PointStatistics(time_disc,"p1",gcf.POINT,2)
+            PointStatistics(time_disc,"p1",gcf.POINT_1,2),
+            PointStatistics(time_disc,"p2",gcf.POINT_2,2),
+            PointStatistics(time_disc,"p3",gcf.POINT_3,2),
         ])
 
     if gcf.INCREMENT_CHECK:
