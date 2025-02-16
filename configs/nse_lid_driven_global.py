@@ -7,7 +7,7 @@ DUMP_LOCATION: str = "sample_dump"
 
 ################               GENERATE configs               ############################
 ### Model
-MODEL_NAME: str = "p-Stokes" #see src.algorithms.select.py for available choices
+MODEL_NAME: str = "p-Navier--Stokes" #see src.algorithms.select.py for available choices
 KAPPA_VALUE: float = 0.1
 
 # Deterministic forcing
@@ -44,7 +44,7 @@ BOUNDARY_CONDITION_EXPLICIT_NAME: str = "lid-driven-strong"
 BOUNDARY_CONDITION_EXPLICIT_INTENSITY: float = 1
 
 # Monte Carlo
-MC_SAMPLES: int = 25
+MC_SAMPLES: int = 1000
 NOISE_INCREMENTS: str = "classical" # see 'src.noise' for available choices
 
 # Noise coefficient

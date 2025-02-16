@@ -7,7 +7,7 @@ DUMP_LOCATION: str = "sample_dump"
 
 ################               GENERATE configs               ############################
 ### Model
-MODEL_NAME: str = "p-Stokes" #see src.algorithms.select.py for available choices
+MODEL_NAME: str = "p-Navier--Stokes" #see src.algorithms.select.py for available choices
 KAPPA_VALUE: float = 0.1
 
 # Deterministic forcing
@@ -40,7 +40,7 @@ MESH_NAME: str = "unit square"  #see 'src.discretisation.mesh' for available cho
 NAME_BOUNDARY_CONDITION: str = "zero"  #see 'src.discretisation.mesh' for available choices
 
 # Monte Carlo
-MC_SAMPLES: int = 25
+MC_SAMPLES: int = 1000
 NOISE_INCREMENTS: str = "classical" # see 'src.noise' for available choices
 
 # Noise coefficient
