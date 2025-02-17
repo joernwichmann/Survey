@@ -76,7 +76,7 @@ def generate_one(time_disc: TimeDiscretisation,
             p_value=p_value,
             kappa_value=kappa_value,
             time_to_det_forcing = ref_to_time_to_det_forcing[level],
-            Reynolds_number=1
+            Reynolds_number=gcf.REYNOLDS_NUMBER
             )
     return (noise_coeff_to_ref_to_noise_increments,
             ref_to_time_to_velocity,
@@ -120,6 +120,7 @@ def generate(deterministic: bool = False) -> None:
     noise_coefficients_prescaled = get_function(gcf.NOISE_COEFFICIENT_NAME,space_disc,gcf.NOISE_FREQUENZY_X,gcf.NOISE_FREQUENZY_Y)
     noise_coefficients = [gcf.NOISE_INTENSITY*noise_coefficient for noise_coefficient in noise_coefficients_prescaled]
     
+    logging.info(f"\nREYNOLDS NUMBER:\t{gcf.REYNOLDS_NUMBER}")
 
     if deterministic:
         print(f"length of noise coefficient list: \t{len(noise_coefficients)}")

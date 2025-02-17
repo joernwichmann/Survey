@@ -9,6 +9,7 @@ DUMP_LOCATION: str = "sample_dump"
 ### Model
 MODEL_NAME: str = "p-Navier--Stokes" #see src.algorithms.select.py for available choices
 KAPPA_VALUE: float = 0.1
+REYNOLDS_NUMBER: float = 1000
 
 # Deterministic forcing
 FORCING: str = "zero"   #see 'src.predefined_data' for available choices
@@ -44,7 +45,7 @@ BOUNDARY_CONDITION_EXPLICIT_NAME: str = "lid-driven-strong"
 BOUNDARY_CONDITION_EXPLICIT_INTENSITY: float = 1
 
 # Monte Carlo
-MC_SAMPLES: int = 1000
+MC_SAMPLES: int = 1
 NOISE_INCREMENTS: str = "classical" # see 'src.noise' for available choices
 
 # Noise coefficient

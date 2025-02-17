@@ -52,7 +52,7 @@ def get_function(name_requested_function: str, space_disc: SpaceDiscretisation,
         case "vortices - prescribed level":
             return _generate_vortices_on_level(level=0,mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
         case "vortices - up to level":
-            return _generate_vortices_up_to_level(end_level=2,mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
+            return _generate_vortices_up_to_level(end_level=0,mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
         
         
         ### Stokes projected functions

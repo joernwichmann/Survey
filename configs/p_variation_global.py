@@ -9,6 +9,7 @@ DUMP_LOCATION: str = "sample_dump"
 ### Model
 MODEL_NAME: str = "p-Stokes" #see src.algorithms.select.py for available choices
 KAPPA_VALUE: float = 0.1
+REYNOLDS_NUMBER: float = 1
 
 # Deterministic forcing
 FORCING: str = "trigonometric"   #see 'src.predefined_data' for available choices
