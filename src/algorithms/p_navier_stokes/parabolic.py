@@ -39,7 +39,6 @@ def CrankNicolson_mixedFEM_strato_transportNoise_withAntisym(space_disc: SpaceDi
     
     Return 'time -> velocity' and 'time -> pressure' dictionaries. """
     # initialise constants in variational form
-    print(f"Reynolds:\t{Reynolds_number}")
     Re = Constant(Reynolds_number)
     tau = Constant(1.0)
     noise_coeff_to_dW = {noise_coeff: Constant(1.0) for noise_coeff in noise_coeff_to_noise_increments}
@@ -145,7 +144,6 @@ def lid_driven_cavity_solver(space_disc: SpaceDiscretisation,
     
     Return 'time -> velocity' and 'time -> pressure' dictionaries. """
     # initialise constants in variational form
-    print(f"Reynolds:\t{Reynolds_number}")
     Re = Constant(Reynolds_number)
     tau = Constant(1.0)
     noise_coeff_to_dW = {noise_coeff: Constant(1.0) for noise_coeff in noise_coeff_to_noise_increments}
