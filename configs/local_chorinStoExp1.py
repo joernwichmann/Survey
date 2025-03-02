@@ -1,12 +1,11 @@
 """Contains local parameter configuration."""
 ### Experimentname
-NAME_EXPERIMENT: str = "p-variation_exp2"
-
-### P-VALUE
-P_VALUE = 2
+NAME_EXPERIMENT: str = "chorin-exp1"
 
 ### Algorithm
-ALGORITHM_NAME: str =  "Crank Nicolson mixed FEM Stratonovich Transport Noise with anti-symmetrisation" #see src.algorithms.select.py for available choices
+ALGORITHM_NAME: str =  "Chorin splitting" #see src.algorithms.select.py for available choices
+
+NOISE_COEFFICIENT_NAME: str = "polynomial" #see 'src.predefined_data' for available choices
 
 ################               FILE/DIRECTORY NAMES               ############################
 #Log

@@ -27,61 +27,47 @@ from src.postprocess.statistics import StatisticsObject
 from src.postprocess.point_statistics import PointStatistics
 from src.postprocess.increments_check import IncrementCheck
 from src.postprocess.processmanager import ProcessManager
+from src.exact_data import knownVelocity, knownPressure, knownForcing
 
 #load global and lokal configs
-from configs import nse_p_variation_exp2 as cf
-from configs import nse_p_variation_global as gcf
+from configs import local_chorinStoExp1 as cf
+from configs import global_chorinExperiment as gcf
 
 def generate_one(time_disc: TimeDiscretisation,
                  space_disc: SpaceDiscretisation,
-                 noise_coefficients: list[Function],
+                 noise_coefficient: Function,
                  initial_velocity: Function,
-                 initial_pressure: Function,
-                 p_value: float,
-                 kappa_value: float,
                  ref_to_time_to_det_forcing: dict[int,dict[float,Function]],
                  algorithm: Algorithm,
                  sampling_strategy: SamplingStrategy) -> tuple[dict[int,list[float]],
-                                                               dict[int,dict[float,Function]],
-                                                               dict[int,dict[float,Function]],
                                                                dict[int,dict[float,Function]],
                                                                dict[int,dict[float,Function]]]:
     """Run the numerical experiment once. 
     
     Return noise and solution."""
     ### Generate noise on all refinement levels
-    noise_coeff_to_ref_to_noise_increments: dict[Function,dict[int,list[floats]]] = {noise_coeff: sampling_strategy(time_disc.refinement_levels,time_disc.initial_time,time_disc.end_time) 
-                               for noise_coeff in noise_coefficients}
+    ref_to_noise_increments = sampling_strategy(time_disc.refinement_levels,time_disc.initial_time,time_disc.end_time)
+
     ### initialise storage 
     ref_to_time_to_velocity = dict()
-    ref_to_time_to_velocity_midpoints = dict()
     ref_to_time_to_pressure = dict()
-    ref_to_time_to_pressure_midpoints = dict()
     for level in time_disc.refinement_levels:
-        ### select noise_increments relative to refinement level
-        noise_coeff_to_noise_increments = {noise_coeff: noise_coeff_to_ref_to_noise_increments[noise_coeff][level] 
-                                           for noise_coeff in noise_coefficients}
         ### Solve algebraic system
         (ref_to_time_to_velocity[level],
-         ref_to_time_to_pressure[level],
-         ref_to_time_to_velocity_midpoints[level],
-         ref_to_time_to_pressure_midpoints[level])  = algorithm(
+         ref_to_time_to_pressure[level])  = algorithm(
             space_disc=space_disc,
             time_grid=time_disc.ref_to_time_grid[level],
-            noise_coeff_to_noise_increments= noise_coeff_to_noise_increments,
+            noise_steps=ref_to_noise_increments[level],
+            noise_coefficient=noise_coefficient,
             initial_condition=initial_velocity,
-            p_value=p_value,
-            kappa_value=kappa_value,
             time_to_det_forcing = ref_to_time_to_det_forcing[level],
             Reynolds_number=gcf.REYNOLDS_NUMBER
             )
-    return (noise_coeff_to_ref_to_noise_increments,
+    return (ref_to_noise_increments,
             ref_to_time_to_velocity,
-            ref_to_time_to_pressure,
-            ref_to_time_to_velocity_midpoints,
-            ref_to_time_to_pressure_midpoints)
+            ref_to_time_to_pressure)
 
-def generate(deterministic: bool = False) -> None:
+def generate() -> None:
     """Runs the experiment.
     deterministic = True: run without stochastic forcing 
     deterministic = False: run with stochastic forcing
@@ -98,7 +84,7 @@ def generate(deterministic: bool = False) -> None:
                                                       velocity_degree=gcf.VELOCITY_DEGREE,
                                                       pressure_element=gcf.PRESSURE_ELEMENT,
                                                       pressure_degree=gcf.PRESSURE_DEGREE,
-                                                      name_bc=gcf.NAME_BOUNDARY_CONDITION
+                                                      name_bc="zero"
                                                       )
     logging.info(space_disc)
 
@@ -107,40 +93,17 @@ def generate(deterministic: bool = False) -> None:
 
     ####### DEFINE DATA
     ### initial condition
-    logging.info(f"\nINITIAL CONDITION:\t{gcf.INITIAL_CONDITION_NAME}\nINITIAL INTENSITY:\t{gcf.INITIAL_INTENSITY}")
-    #interprete string as function
-    unprocessed_initial_velocity = gcf.INITIAL_INTENSITY*get_function(gcf.INITIAL_CONDITION_NAME,space_disc,gcf.INITIAL_FREQUENZY_X,gcf.INITIAL_FREQUENZY_Y)
-    initial_velocity, initial_pressure = HL_projection_withBC(vector_field=unprocessed_initial_velocity,space_disc=space_disc)
-
-    ### noise coefficient
-    logging.info(f"\nNOISE COEFFICIENT:\t{gcf.NOISE_COEFFICIENT_NAME}\nNOISE INTENSITY:\t{gcf.NOISE_INTENSITY}")
-    noise_coefficients_prescaled = get_function(gcf.NOISE_COEFFICIENT_NAME,space_disc,gcf.NOISE_FREQUENZY_X,gcf.NOISE_FREQUENZY_Y)
-    noise_coefficients = [gcf.NOISE_INTENSITY*noise_coefficient for noise_coefficient in noise_coefficients_prescaled]
+    initial_velocity = knownVelocity(space_disc.mesh,space_disc.velocity_space)
     
-
+    ### noise coefficient
+    logging.info(f"\nNOISE COEFFICIENT:\t{cf.NOISE_COEFFICIENT_NAME}\nNOISE INTENSITY:\t{gcf.NOISE_INTENSITY}")
+    noise_coefficient = gcf.NOISE_INTENSITY*get_function(cf.NOISE_COEFFICIENT_NAME,space_disc,gcf.NOISE_FREQUENZY_X,gcf.NOISE_FREQUENZY_Y)
+    
     logging.info(f"\nREYNOLDS NUMBER:\t{gcf.REYNOLDS_NUMBER}")
 
-    if deterministic:
-        print(f"length of noise coefficient list: \t{len(noise_coefficients)}")
-        #plotting of noise coefficients
-        ncplot = Function(space_disc.velocity_space)
-        for k, noise_coefficient in enumerate(noise_coefficients):
-            ncplot.assign(noise_coefficient)
-            outfile = File(f"noise_coefficients/{cf.NAME_EXPERIMENT}/nc_{k}.pvd")
-            outfile.write(ncplot)
-        noise_coefficients = [Function(space_disc.velocity_space)]
-
-
     ### deterministic forcing
-    logging.info(f"\nDETERMINISTIC FORCING:\t{gcf.FORCING}\nFORCING INTENSITY:\t{gcf.FORCING_INTENSITY}")
-    ref_to_time_to_det_forcing = {level: {time: gcf.FORCING_INTENSITY*get_function(gcf.FORCING,space_disc,gcf.FORCING_FREQUENZY_X,gcf.FORCING_FREQUENZY_Y) for time in time_disc.ref_to_time_grid[level]} for level in time_disc.refinement_levels}
+    ref_to_time_to_det_forcing = {level: {time: knownForcing(time,gcf.GAMMA,1/gcf.REYNOLDS_NUMBER,space_disc.mesh,space_disc.velocity_space) for time in time_disc.ref_to_time_grid[level]} for level in time_disc.refinement_levels}
     
-    ### shear stress
-    logging.info(f"\nP-VALUE:\t{cf.P_VALUE}\nKAPPA-VALUE:\t{gcf.KAPPA_VALUE}")
-    p_value = cf.P_VALUE
-    kappa_value = gcf.KAPPA_VALUE
-    
-
     # select algorithm
     algorithm = select_algorithm(gcf.MODEL_NAME,cf.ALGORITHM_NAME)
 
@@ -183,9 +146,7 @@ def generate(deterministic: bool = False) -> None:
 
     if gcf.STATISTICS_CHECK:
         statistics_velocity = StatisticsObject("velocity",time_disc.ref_to_time_grid,space_disc.velocity_space)
-        statistics_velocity_midpoints = StatisticsObject("velocity_midpoints",time_disc.ref_to_time_grid,space_disc.velocity_space)
         statistics_pressure = StatisticsObject("pressure",time_disc.ref_to_time_grid,space_disc.pressure_space)
-        statistics_pressure_midpoints = StatisticsObject("pressure_midpoints",time_disc.ref_to_time_grid,space_disc.pressure_space)
 
     if gcf.POINT_STATISTICS_CHECK:
         point_statistics_velocity = ProcessManager([
@@ -205,12 +166,9 @@ def generate(deterministic: bool = False) -> None:
     
     runtimes = {"solving": 0,"comparison": 0, "stability": 0, "energy": 0, "statistics": 0, "point-statistics": 0, "increment": 0}
     
-    if deterministic:
-        print(format_header("RUN DETERMINISTIC EXPERIMENT"))
-        new_seeds = range(1)
-    else: 
-        print(format_header("START MONTE CARLO ITERATION") + f"\nRequested samples:\t{gcf.MC_SAMPLES}")
-        new_seeds = range(gcf.MC_SAMPLES)
+
+    print(format_header("START MONTE CARLO ITERATION") + f"\nRequested samples:\t{gcf.MC_SAMPLES}")
+    new_seeds = range(gcf.MC_SAMPLES)
 
     ### start MC iteration 
     for k in new_seeds:
@@ -219,15 +177,10 @@ def generate(deterministic: bool = False) -> None:
         time_mark = process_time_ns()
         (ref_to_noise_increments, 
          ref_to_time_to_velocity, 
-         ref_to_time_to_pressure, 
-         ref_to_time_to_velocity_midpoints, 
-         ref_to_time_to_pressure_midpoints) = generate_one(time_disc=time_disc,
+         ref_to_time_to_pressure) = generate_one(time_disc=time_disc,
                                                            space_disc=space_disc,
-                                                           noise_coefficients=noise_coefficients,
+                                                           noise_coefficient=noise_coefficient,
                                                            initial_velocity=initial_velocity,
-                                                           initial_pressure=initial_pressure,
-                                                           p_value=p_value,
-                                                           kappa_value=kappa_value,
                                                            ref_to_time_to_det_forcing=ref_to_time_to_det_forcing,
                                                            algorithm=algorithm,
                                                            sampling_strategy=sampling_strategy)
@@ -266,9 +219,7 @@ def generate(deterministic: bool = False) -> None:
         if gcf.STATISTICS_CHECK:
             time_mark = process_time_ns()
             statistics_velocity.update(ref_to_time_to_velocity)
-            statistics_velocity_midpoints.update(ref_to_time_to_velocity_midpoints)
             statistics_pressure.update(ref_to_time_to_pressure)
-            statistics_pressure_midpoints.update(ref_to_time_to_pressure_midpoints)
             runtimes["statistics"] += process_time_ns()-time_mark
 
         if gcf.POINT_STATISTICS_CHECK:
@@ -289,34 +240,20 @@ def generate(deterministic: bool = False) -> None:
         logging.info(format_header("TIME CONVERGENCE") + f"\nComparisons are stored in:\t {cf.TIME_DIRECTORYNAME}/")
         logging.info(time_convergence_velocity)
         logging.info(time_convergence_pressure)
-
-        if deterministic:
-            time_convergence_velocity.save(cf.TIME_DIRECTORYNAME + "/deterministic")
-            time_convergence_pressure.save(cf.TIME_DIRECTORYNAME + "/deterministic")
-        else:
-            time_convergence_velocity.save(cf.TIME_DIRECTORYNAME)
-            time_convergence_pressure.save(cf.TIME_DIRECTORYNAME)
+        time_convergence_velocity.save(cf.TIME_DIRECTORYNAME)
+        time_convergence_pressure.save(cf.TIME_DIRECTORYNAME)
 
     if gcf.STABILITY_CHECK:
         logging.info(format_header("STABILITY CHECK") + f"\nStability checks are stored in:\t {cf.STABILITY_DIRECTORYNAME}/")
         logging.info(stability_check_velocity)
         logging.info(stability_check_pressure)
-
-        if deterministic:
-            stability_check_velocity.save(cf.STABILITY_DIRECTORYNAME + "/deterministic")
-            stability_check_pressure.save(cf.STABILITY_DIRECTORYNAME + "/deterministic")
-        else:
-            stability_check_velocity.save(cf.STABILITY_DIRECTORYNAME)
-            stability_check_pressure.save(cf.STABILITY_DIRECTORYNAME)
+        stability_check_velocity.save(cf.STABILITY_DIRECTORYNAME)
+        stability_check_pressure.save(cf.STABILITY_DIRECTORYNAME)
 
     if gcf.ENERGY_CHECK:
         logging.info(format_header("ENERGY CHECK") + f"\nEnergy checks are stored in:\t {cf.ENERGY_DIRECTORYNAME}/")
-        if deterministic:  
-            energy_check_velocity.save(cf.ENERGY_DIRECTORYNAME + "/deterministic")
-            energy_check_velocity.plot(cf.ENERGY_DIRECTORYNAME + "/deterministic")
-        else:
-            energy_check_velocity.save(cf.ENERGY_DIRECTORYNAME)
-            energy_check_velocity.plot(cf.ENERGY_DIRECTORYNAME)
+        energy_check_velocity.save(cf.ENERGY_DIRECTORYNAME)
+        energy_check_velocity.plot(cf.ENERGY_DIRECTORYNAME)
 
     if gcf.IND_ENERGY_CHECK and not deterministic:
         logging.info(format_header("ENERGY CHECK") + f"\nIndividual energy checks are stored in:\t {cf.ENERGY_DIRECTORYNAME}/individual/")
@@ -328,36 +265,21 @@ def generate(deterministic: bool = False) -> None:
 
     if gcf.STATISTICS_CHECK:
         logging.info(format_header("STATISTICS") + f"\nStatistics are stored in:\t {cf.VTK_DIRECTORY + '/' + cf.STATISTICS_DIRECTORYNAME}/")
-        if deterministic:
-            statistics_velocity.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME + "/deterministic")
-            statistics_velocity_midpoints.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME + "/deterministic")
-            statistics_pressure.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME + "/deterministic")
-            statistics_pressure_midpoints.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME + "/deterministic")
-        else:
-            statistics_velocity.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME)
-            statistics_velocity_midpoints.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME)
-            statistics_pressure.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME)
-            statistics_pressure_midpoints.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME)
+        statistics_velocity.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME)
+        statistics_pressure.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME)
 
     if gcf.POINT_STATISTICS_CHECK:
         logging.info(format_header("POINT STATISTICS") + f"\nPoint statistics are stored in:\t {cf.POINT_STATISTICS_DIRECTORYNAME}/")
-        if deterministic:
-            point_statistics_velocity.save(cf.POINT_STATISTICS_DIRECTORYNAME + "/deterministic")
-        else:
-            point_statistics_velocity.save(cf.POINT_STATISTICS_DIRECTORYNAME)
-            point_statistics_velocity.save_individual(cf.POINT_STATISTICS_DIRECTORYNAME,gcf.IND_POINT_STATISTICS_CHECK_NUMBER)
+        point_statistics_velocity.save(cf.POINT_STATISTICS_DIRECTORYNAME)
+        point_statistics_velocity.save_individual(cf.POINT_STATISTICS_DIRECTORYNAME,gcf.IND_POINT_STATISTICS_CHECK_NUMBER)
 
     if gcf.INCREMENT_CHECK:
         logging.info(format_header("INCREMENT CHECK") + f"\nIncrement check is stored in:\t {cf.INCREMENT_DIRECTORYNAME}/")
         logging.info(increment_check)
-        if deterministic:
-            increment_check.save(cf.INCREMENT_DIRECTORYNAME + "/deterministic")
-            increment_check.plot(cf.INCREMENT_DIRECTORYNAME + "/deterministic")
-        else:
-            increment_check.save(cf.INCREMENT_DIRECTORYNAME)
-            increment_check.plot(cf.INCREMENT_DIRECTORYNAME)
-            increment_check.plot_individual(cf.INCREMENT_DIRECTORYNAME)
-            
+        increment_check.save(cf.INCREMENT_DIRECTORYNAME)
+        increment_check.plot(cf.INCREMENT_DIRECTORYNAME)
+        increment_check.plot_individual(cf.INCREMENT_DIRECTORYNAME)
+        
 
 
     #show runtimes
@@ -365,13 +287,10 @@ def generate(deterministic: bool = False) -> None:
 
 if __name__ == "__main__":
     #remove old logfile
-    update_logfile(gcf.DUMP_LOCATION,cf.NAME_LOGFILE_GENERATE)
-
-    #run deterministic experiment
-    generate(deterministic=True)
+    update_logfile("",cf.NAME_LOGFILE_GENERATE)
     
     #run stochastic experiment
-    generate(deterministic=False)
+    generate()
     
     #display storage location of log file
     print(f"Logs saved in:\t {cf.NAME_LOGFILE_GENERATE}")

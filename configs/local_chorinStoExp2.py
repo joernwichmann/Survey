@@ -1,12 +1,11 @@
 """Contains local parameter configuration."""
 ### Experimentname
-NAME_EXPERIMENT: str = "nse-lid-driven_exp2"
-
-### P-VALUE
-P_VALUE = 2.0
+NAME_EXPERIMENT: str = "chorin-exp2"
 
 ### Algorithm
-ALGORITHM_NAME: str =  "lid-driven cavity solver" #see src.algorithms.select.py for available choices
+ALGORITHM_NAME: str =  "Chorin splitting" #see src.algorithms.select.py for available choices
+
+NOISE_COEFFICIENT_NAME: str = "polynomial - no div" #see 'src.predefined_data' for available choices
 
 ################               FILE/DIRECTORY NAMES               ############################
 #Log

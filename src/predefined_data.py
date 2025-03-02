@@ -1,4 +1,5 @@
 from firedrake import *
+#from firedrake.__future__ import interpolate
 from typing import TypeAlias, Callable, Any, Tuple
 
 from src.discretisation.space import SpaceDiscretisation
@@ -49,10 +50,13 @@ def get_function(name_requested_function: str, space_disc: SpaceDiscretisation,
             return _lid_driven_weak(mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
         case "lid-driven-strong":
             return _lid_driven_strong(mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
+        #lid-driven-stronger doesnt work properly. I assume (I havent checked) that is projection is the zero vector.
+        case "lid-driven-stronger":
+            return  _lid_driven_stronger(mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
         case "vortices - prescribed level":
             return _generate_vortices_on_level(level=0,mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
         case "vortices - up to level":
-            return _generate_vortices_up_to_level(end_level=0,mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
+            return _generate_vortices_up_to_level(end_level=2,mesh=space_disc.mesh,velocity_space=space_disc.velocity_space)
         
         
         ### Stokes projected functions
@@ -308,4 +312,14 @@ def _lid_driven_strong(mesh: MeshGeometry, velocity_space: FunctionSpace) -> Fun
         (0)
         ])
     return project(expr, velocity_space)
+
+def _lid_driven_stronger(mesh: MeshGeometry, velocity_space: FunctionSpace) -> Function:
+    x, y = SpatialCoordinate(mesh)
+    tol = 1e-10
+    #tol = 0.005
+    expr = as_vector([
+        conditional(gt(y,1.0 - tol), 1, 0),
+        (0)
+        ])
+    return interpolate(expr, velocity_space)
         

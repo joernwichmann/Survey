@@ -131,7 +131,7 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
     q = TestFunction(space_disc.pressure_space)
     pnew = Function(space_disc.pressure_space)
 
-    a1 = ( inner(u,v) + tau*inner(grad(u), grad(v)) )*dx
+    a1 = ( inner(u,v) + 1/Re*tau*inner(grad(u), grad(v)) )*dx
     L1 = ( inner(uold,v) + tau*inner(det_forcing,v) + dW*inner(noise_coefficient, v) )*dx
 
     a2 = inner(grad(p),grad(q))*dx
@@ -185,7 +185,6 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
         uold.assign(unew)
 
     return time_to_velocity, time_to_pressure
-
 
 def impliciteEuler_mixedFEM_ito_transportNoise(space_disc: SpaceDiscretisation,
                            time_grid: list[float],
