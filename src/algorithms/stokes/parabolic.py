@@ -107,8 +107,7 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
 
 def Chorin_splitting(space_disc: SpaceDiscretisation,
                      time_grid: list[float],
-                     noise_steps: list[float],
-                     noise_coefficient: Function,
+                     noise_coeff_to_noise_increments: dict[Function,list[int]],
                      initial_condition: Function,
                      time_to_det_forcing: dict[float,Function] | None = None,
                      Reynolds_number: float = 1) -> tuple[dict[float,Function], dict[float,Function]]:
@@ -118,7 +117,7 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
 
     Re = Constant(Reynolds_number)
     tau = Constant(1.0)
-    dW = Constant(1.0)
+    noise_coeff_to_dW = {noise_coeff: Constant(1.0) for noise_coeff in noise_coeff_to_noise_increments}
     det_forcing = Function(space_disc.velocity_space)
 
     u = TrialFunction(space_disc.velocity_space)
@@ -132,7 +131,9 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
     pnew = Function(space_disc.pressure_space)
 
     a1 = ( inner(u,v) + 1/Re*tau*inner(grad(u), grad(v)) )*dx
-    L1 = ( inner(uold,v) + tau*inner(det_forcing,v) + dW*inner(noise_coefficient, v) )*dx
+    L1 = ( inner(uold,v) + tau*inner(det_forcing,v) )*dx
+    for noise_coeff in noise_coeff_to_noise_increments:
+        L1 = L1 + noise_coeff_to_dW[noise_coeff]*inner(noise_coeff, v)*dx
 
     a2 = inner(grad(p),grad(q))*dx
     L2 = 1/tau*inner(utilde,grad(q))*dx
@@ -154,14 +155,9 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
     time_to_velocity[time] = deepcopy(uold)
     time_to_pressure[time] = deepcopy(pnew)
 
-    if not len(time_increments) == len(noise_steps):
-        msg_error = "Time grid and noise grid are not of the same length.\n"
-        msg_error += f"Time grid length: \t {len(time_increments)}\n"
-        msg_error += f"Noise grid length: \t {len(noise_steps)}"
-        raise ValueError(msg_error)
-
     for index in tqdm(range(len(time_increments))):
-        dW.assign(noise_steps[index])
+        for noise_coeff in noise_coeff_to_noise_increments:
+            noise_coeff_to_dW[noise_coeff].assign(noise_coeff_to_noise_increments[noise_coeff][index])
         tau.assign(time_increments[index])
         time += time_increments[index]
         if time_to_det_forcing:
