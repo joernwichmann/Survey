@@ -12,7 +12,7 @@ GAMMA: float = 1    #Hoelder index of time-regularity of pressure
 # Time
 INITIAL_TIME: float = 0
 END_TIME: float = 1
-REFINEMENT_LEVELS: list[int] = list(range(2,10))
+REFINEMENT_LEVELS: list[int] = list(range(4,13))
 
 # Elements
 VELOCITY_ELEMENT: str = "CG"    #see firedrake doc for available spaces
@@ -22,17 +22,13 @@ PRESSURE_ELEMENT: str = "CG"    #see firedrake doc for available spaces
 PRESSURE_DEGREE: int = 1
 
 # Mesh
-NUMBER_SPACE_POINTS: int = 12
+NUMBER_SPACE_POINTS: int = 32
 MESH_NAME: str = "unit square"  #see 'src.discretisation.mesh' for available choices
 
 # Monte Carlo
-MC_SAMPLES: int = 1000
+MC_SAMPLES: int = 10
 NOISE_INCREMENTS: str = "classical" # see 'src.noise' for available choices
 
-# Noise coefficient
-NOISE_INTENSITY: float = 1
-NOISE_FREQUENZY_X: int = 2
-NOISE_FREQUENZY_Y: int = 4
 
 ################               ANALYSE configs               ############################
 #Convergence
@@ -40,7 +36,7 @@ TIME_CONVERGENCE: bool = True
 TIME_COMPARISON_TYPE: str = "absolute"       ## "absolute" and "relative" are supported
 
 #Stability
-STABILITY_CHECK: bool = False
+STABILITY_CHECK: bool = True
 
 #Mean energy
 ENERGY_CHECK: bool = True

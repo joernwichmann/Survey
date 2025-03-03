@@ -1,11 +1,11 @@
 """Contains local parameter configuration."""
 ### Experimentname
-NAME_EXPERIMENT: str = "chorin-exp1"
+NAME_EXPERIMENT: str = "CHP-non-solenoidal"
 
 ### Algorithm
 ALGORITHM_NAME: str =  "Chorin splitting" #see src.algorithms.select.py for available choices
 
-NOISE_COEFFICIENT_NAME: str = "polynomial" #see 'src.predefined_data' for available choices
+TRUNCATION_INDEX_NOISE: int = 4
 
 ################               FILE/DIRECTORY NAMES               ############################
 #Log

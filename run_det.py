@@ -35,7 +35,7 @@ from configs import global_chorinExperiment as gcf
 
 def generate_one(time_disc: TimeDiscretisation,
                  space_disc: SpaceDiscretisation,
-                 noise_coefficient: Function,
+                 noise_coefficients: list[Function],
                  initial_velocity: Function,
                  ref_to_time_to_det_forcing: dict[int,dict[float,Function]],
                  algorithm: Algorithm,
@@ -46,24 +46,27 @@ def generate_one(time_disc: TimeDiscretisation,
     
     Return noise and solution."""
     ### Generate noise on all refinement levels
-    ref_to_noise_increments = sampling_strategy(time_disc.refinement_levels,time_disc.initial_time,time_disc.end_time)
+    noise_coeff_to_ref_to_noise_increments: dict[Function,dict[int,list[floats]]] = {noise_coeff: sampling_strategy(time_disc.refinement_levels,time_disc.initial_time,time_disc.end_time) 
+                               for noise_coeff in noise_coefficients}
 
     ### initialise storage 
     ref_to_time_to_velocity = dict()
     ref_to_time_to_pressure = dict()
     for level in time_disc.refinement_levels:
+        #select noise 
+        noise_coeff_to_noise_increments = {noise_coeff: noise_coeff_to_ref_to_noise_increments[noise_coeff][level] 
+                                           for noise_coeff in noise_coefficients}
         ### Solve algebraic system
         (ref_to_time_to_velocity[level],
          ref_to_time_to_pressure[level])  = algorithm(
             space_disc=space_disc,
             time_grid=time_disc.ref_to_time_grid[level],
-            noise_steps=ref_to_noise_increments[level],
-            noise_coefficient=noise_coefficient,
+            noise_coeff_to_noise_increments= noise_coeff_to_noise_increments,
             initial_condition=initial_velocity,
             time_to_det_forcing = ref_to_time_to_det_forcing[level],
             Reynolds_number=gcf.REYNOLDS_NUMBER
             )
-    return (ref_to_noise_increments,
+    return (noise_coeff_to_ref_to_noise_increments,
             ref_to_time_to_velocity,
             ref_to_time_to_pressure)
 
@@ -158,7 +161,7 @@ def generate() -> None:
     
 
     print(format_header("RUN DETERMINISTIC EXPERIMENT"))
-    noise_coefficient = Function(space_disc.velocity_space)
+    noise_coefficients = [Function(space_disc.velocity_space)]
 
     ## solve the system    
     time_mark = process_time_ns()
@@ -166,7 +169,7 @@ def generate() -> None:
         ref_to_time_to_velocity, 
         ref_to_time_to_pressure) = generate_one(time_disc=time_disc,
                                                         space_disc=space_disc,
-                                                        noise_coefficient=noise_coefficient,
+                                                        noise_coefficients=noise_coefficients,
                                                         initial_velocity=initial_velocity,
                                                         ref_to_time_to_det_forcing=ref_to_time_to_det_forcing,
                                                         algorithm=algorithm,
