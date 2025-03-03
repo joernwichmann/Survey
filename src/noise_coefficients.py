@@ -1,10 +1,4 @@
 from firedrake import *
-from typing import TypeAlias, Callable, Any, Tuple
-
-from src.discretisation.space import SpaceDiscretisation
-from src.discretisation.projections import Stokes_projection, HL_projection, HL_projection_withBC
-
-
 
 def NON_SOLENOIDAL_CarelliHausenblasProhl(end_level: int, mesh: MeshGeometry, velocity_space: FunctionSpace) -> list[Function]:
     """Returns a list of noise coefficients based on the construction for NON-SOLENOIDAL, additive noise in Carelli, Hausenblas and Prohl.
@@ -25,7 +19,7 @@ def NON_SOLENOIDAL_CarelliHausenblasProhl(end_level: int, mesh: MeshGeometry, ve
     return noiseCoefficients
 
 def SOLENOIDAL_CarelliHausenblasProhl(end_level: int, mesh: MeshGeometry, velocity_space: FunctionSpace) -> list[Function]:
-    """Returns a list of noise coefficients based on the construction for OLENOIDAL, additive noise in Carelli, Hausenblas and Prohl.
+    """Returns a list of noise coefficients based on the construction for SOLENOIDAL, additive noise in Carelli, Hausenblas and Prohl.
     Parameters: 
         -   end_level:  truncation index of the sum
         -   mesh:       triangulation of the domain
