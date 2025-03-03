@@ -260,7 +260,7 @@ def generate() -> None:
         energy_check_velocity.save(cf.ENERGY_DIRECTORYNAME)
         energy_check_velocity.plot(cf.ENERGY_DIRECTORYNAME)
 
-    if gcf.IND_ENERGY_CHECK and not deterministic:
+    if gcf.IND_ENERGY_CHECK:
         logging.info(format_header("ENERGY CHECK") + f"\nIndividual energy checks are stored in:\t {cf.ENERGY_DIRECTORYNAME}/individual/")
         for sample in sample_to_energy_check_velocity.keys():
             sample_to_energy_check_velocity[sample].save(cf.ENERGY_DIRECTORYNAME + "/individual")
