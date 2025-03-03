@@ -1,6 +1,6 @@
 """Contains local parameter configuration."""
 ### Experimentname
-NAME_EXPERIMENT: str = "CHP-solenoidal--modified-Chorin"
+NAME_EXPERIMENT: str = "CHP-non-solenoidal--modified-Chorin"
 
 ### Algorithm
 ALGORITHM_NAME: str =  "modified Chorin splitting" #see src.algorithms.select.py for available choices

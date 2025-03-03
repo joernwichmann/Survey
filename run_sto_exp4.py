@@ -28,7 +28,7 @@ from src.postprocess.point_statistics import PointStatistics
 from src.postprocess.increments_check import IncrementCheck
 from src.postprocess.processmanager import ProcessManager
 from src.exact_data import knownVelocity, knownPressure, knownForcing
-from src.noise_coefficients import SOLENOIDAL_CarelliHausenblasProhl
+from src.noise_coefficients import NON_SOLENOIDAL_CarelliHausenblasProhl
 
 #load global and lokal configs
 from configs import local_chorinStoExp3 as cf
@@ -107,7 +107,7 @@ def generate() -> None:
     initial_velocity = Function(space_disc.velocity_space)
     
     ### noise coefficient
-    noise_coefficients = SOLENOIDAL_CarelliHausenblasProhl(cf.TRUNCATION_INDEX_NOISE,space_disc.mesh,space_disc.velocity_space)
+    noise_coefficients = NON_SOLENOIDAL_CarelliHausenblasProhl(cf.TRUNCATION_INDEX_NOISE,space_disc.mesh,space_disc.velocity_space)
     logging.info(f"\nNUMBER OF NOISE COEFFICIENTS:\t{len(noise_coefficients)}")
     
     logging.info(f"\nREYNOLDS NUMBER:\t{gcf.REYNOLDS_NUMBER}")
