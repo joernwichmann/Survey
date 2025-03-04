@@ -31,7 +31,7 @@ from src.exact_data import knownVelocity, knownPressure, knownForcing
 from src.noise_coefficients import NON_SOLENOIDAL_CarelliHausenblasProhl
 
 #load global and lokal configs
-from configs import local_chorinStoExp3 as cf
+from configs import local_chorinStoExp4 as cf
 from configs import global_chorinExperiment as gcf
 
 def generate_one(time_disc: TimeDiscretisation,
