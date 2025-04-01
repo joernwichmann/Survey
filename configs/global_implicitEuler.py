@@ -26,7 +26,7 @@ NUMBER_SPACE_POINTS: int = 32
 MESH_NAME: str = "unit square"  #see 'src.discretisation.mesh' for available choices
 
 # Monte Carlo
-MC_SAMPLES: int = 1000
+MC_SAMPLES: int = 100
 NOISE_INCREMENTS: str = "classical" # see 'src.noise' for available choices
 
 
