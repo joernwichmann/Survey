@@ -1,7 +1,7 @@
 import os
 import shutil
 import logging
-from firedrake import File, Function
+from firedrake import VTKFile, Function
 
 from src.database.loader import get_ref_to_time_to_velocity, get_ref_to_time_to_pressure
 from src.discretisation.space import SpaceDiscretisation
@@ -9,12 +9,12 @@ from src.discretisation.space import SpaceDiscretisation
 #################### functions that store already loaded velocity and pressure in .vtk format 
 def save_VTK_snapshot(name_outfile: str , func: Function) -> None:
     """Save function in vtk format."""
-    outfile = File(name_outfile)
+    outfile = VTKFile(name_outfile)
     outfile.write(func)
 
 def save_solution_as_VTK(name_outfile: str, time_to_velocity: dict[float,Function], time_to_pressure: dict[float,Function]) -> None:
     """Save velocity and pressure in vtk format."""
-    outfile =  File(name_outfile)
+    outfile =  VTKFile(name_outfile)
     for time in time_to_velocity.keys():
         time_to_velocity[time].rename("Velocity")
         time_to_pressure[time].rename("Pressure")
@@ -22,7 +22,7 @@ def save_solution_as_VTK(name_outfile: str, time_to_velocity: dict[float,Functio
 
 def save_function_as_VTK(name_outfile: str, name: str, time_to_function: dict[float,Function]) -> None:
     """Save function in vtk format."""
-    outfile =  File(name_outfile)
+    outfile =  VTKFile(name_outfile)
     for time in time_to_function.keys():
         time_to_function[time].rename(name)
         outfile.write(time_to_function[time],time=time)
