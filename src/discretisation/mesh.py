@@ -1,6 +1,3 @@
-import netgen
-from netgen.meshing import Mesh as ngMesh
-
 from firedrake import UnitSquareMesh, COMM_WORLD, Mesh
 
 from src.string_formatting import format_header
@@ -12,9 +9,7 @@ def get_mesh(name_mesh: str, space_points: int, comm = COMM_WORLD):
         case "unit square":
             return UnitSquareMesh(space_points,space_points,name = name_mesh,comm=comm)
         case "unit_square_non_singular":
-            ngmesh = ngMesh()
-            ngmesh.Load("src/discretisation/mesh_files/unit_square_non_singular_0.vol")
-            return Mesh(ngmesh, name = name_mesh, distribution_name = name_mesh, permutation_name= name_mesh, comm=comm)
+            raise NotImplementedError
         case "unit L-shape":
             raise NotImplementedError
         case other:
