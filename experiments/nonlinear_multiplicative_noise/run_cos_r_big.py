@@ -32,14 +32,13 @@ from src.postprocess.point_statistics import PointStatistics
 from src.postprocess.increments_check import IncrementCheck
 from src.postprocess.processmanager import ProcessManager
 from src.exact_data import knownVelocity, knownPressure, knownForcing
-from src.noise_coefficients import NON_SOLENOIDAL_CarelliHausenblasProhl
 
 from local_src.algorithm import implicitEuler_mixedFEM_multi
-from local_src.noiseCoefficients import COS_BASIS
+from local_src.noiseCoefficients import COS_BASIS, SIN_BASIS
 
 #load global and lokal configs
-from configs import local_configs as cf
-from configs import global_configs as gcf
+from configs import cfs_cos_r_big as cf
+from configs import cfs_global as gcf
 
 def generate_one(time_disc: TimeDiscretisation,
                  space_disc: SpaceDiscretisation,
