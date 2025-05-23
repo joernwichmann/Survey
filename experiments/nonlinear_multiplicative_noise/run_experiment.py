@@ -5,10 +5,14 @@ import logging
 from time import process_time_ns
 from functools import partial
 
+#add grandparent directory
+import sys
+sys.path.insert(0,'../..')
+
 from src.discretisation.space import get_space_discretisation_from_CONFIG, SpaceDiscretisation
 from src.discretisation.time import TimeDiscretisation
 from src.data_dump.setup import  update_logfile
-from src.algorithms.select import Algorithm, select_algorithm
+from src.algorithms.select import Algorithm 
 from src.noise import SamplingStrategy, select_sampling
 from src.predefined_data import get_function
 from src.string_formatting import format_runtime, format_header
@@ -30,9 +34,12 @@ from src.postprocess.processmanager import ProcessManager
 from src.exact_data import knownVelocity, knownPressure, knownForcing
 from src.noise_coefficients import NON_SOLENOIDAL_CarelliHausenblasProhl
 
+from local_src.algorithm import implicitEuler_mixedFEM_multi
+from local_src.noiseCoefficients import COS_BASIS
+
 #load global and lokal configs
-from configs import local_chorinStoExp1 as cf
-from configs import global_chorinExperiment as gcf
+from configs import local_configs as cf
+from configs import global_configs as gcf
 
 def generate_one(time_disc: TimeDiscretisation,
                  space_disc: SpaceDiscretisation,
@@ -101,16 +108,13 @@ def generate() -> None:
     initial_velocity = Function(space_disc.velocity_space)
     
     ### noise coefficient
-    noise_coefficients = NON_SOLENOIDAL_CarelliHausenblasProhl(cf.TRUNCATION_INDEX_NOISE,space_disc.mesh,space_disc.velocity_space)
+    noise_coefficients = COS_BASIS(cf.TRUNCATION_INDEX_NOISE,space_disc.mesh,space_disc.velocity_space,cf.R_VALUE_NOISE)
     logging.info(f"\nNUMBER OF NOISE COEFFICIENTS:\t{len(noise_coefficients)}")
     
     logging.info(f"\nREYNOLDS NUMBER:\t{gcf.REYNOLDS_NUMBER}")
 
     ### deterministic forcing
     ref_to_time_to_det_forcing = {level: {time: knownForcing(time,gcf.GAMMA,1/gcf.REYNOLDS_NUMBER,space_disc.mesh,space_disc.velocity_space) for time in time_disc.ref_to_time_grid[level]} for level in time_disc.refinement_levels}
-    
-    # select algorithm
-    algorithm = select_algorithm(gcf.MODEL_NAME,cf.ALGORITHM_NAME)
 
     #select sampling
     sampling_strategy = select_sampling(gcf.NOISE_INCREMENTS)
@@ -187,7 +191,7 @@ def generate() -> None:
                                                            noise_coefficients=noise_coefficients,
                                                            initial_velocity=initial_velocity,
                                                            ref_to_time_to_det_forcing=ref_to_time_to_det_forcing,
-                                                           algorithm=algorithm,
+                                                           algorithm=implicitEuler_mixedFEM_multi,
                                                            sampling_strategy=sampling_strategy)
         runtimes["solving"] += process_time_ns()-time_mark
 

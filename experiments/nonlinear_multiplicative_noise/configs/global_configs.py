@@ -22,11 +22,11 @@ PRESSURE_ELEMENT: str = "CG"    #see firedrake doc for available spaces
 PRESSURE_DEGREE: int = 1
 
 # Mesh
-NUMBER_SPACE_POINTS: int = 32
+NUMBER_SPACE_POINTS: int = 16
 MESH_NAME: str = "unit square"  #see 'src.discretisation.mesh' for available choices
 
 # Monte Carlo
-MC_SAMPLES: int = 100
+MC_SAMPLES: int = 10
 NOISE_INCREMENTS: str = "classical" # see 'src.noise' for available choices
 
 

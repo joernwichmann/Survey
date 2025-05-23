@@ -1,11 +1,12 @@
 """Contains local parameter configuration."""
 ### Experimentname
-NAME_EXPERIMENT: str = "CHP-solenoidal--implicit-Euler"
+NAME_EXPERIMENT: str = "nonlinear_multiplicative_noise"
 
 ### Algorithm
 ALGORITHM_NAME: str =  "Implicit Euler mixed FEM" #see src.algorithms.select.py for available choices
 
 TRUNCATION_INDEX_NOISE: int = 4
+R_VALUE_NOISE: float = 2.1
 
 ################               FILE/DIRECTORY NAMES               ############################
 #Log
