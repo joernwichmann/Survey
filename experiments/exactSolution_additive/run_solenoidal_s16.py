@@ -33,10 +33,10 @@ from src.postprocess.increments_check import IncrementCheck
 from src.postprocess.processmanager import ProcessManager
 
 from local_src.algorithm import implicitEuler_mixedFEM
-from local_src.solenoidal import noiseCoefficient, initialCondition, bodyforce1, bodyforce2, time_to_exact_velocity, time_to_exact_pressure
+from local_src.solenoidal import noiseCoefficient, initialCondition, bodyforce1, bodyforce2, _hill_wave
 
 #load global and lokal configs
-from configs import cfs_solenoidal as cf
+from configs import cfs_solenoidal_s16 as cf
 from configs import cfs_global as gcf
 
 def generate_one(time_disc: TimeDiscretisation,
@@ -58,11 +58,15 @@ def generate_one(time_disc: TimeDiscretisation,
     ### initialise storage 
     ref_to_time_to_velocity = dict()
     ref_to_time_to_pressure = dict()
+    ref_to_time_to_velError = dict()
+    ref_to_time_to_preError = dict()
     for level in time_disc.refinement_levels:
 
         ### Solve algebraic system
         (ref_to_time_to_velocity[level],
-         ref_to_time_to_pressure[level])  = algorithm(
+         ref_to_time_to_pressure[level],
+         ref_to_time_to_velError[level],
+         ref_to_time_to_preError[level])  = algorithm(
             space_disc=space_disc,
             time_grid=time_disc.ref_to_time_grid[level],
             noise_increments= ref_to_noise_increments[level],
@@ -74,7 +78,9 @@ def generate_one(time_disc: TimeDiscretisation,
             )
     return (ref_to_noise_increments,
             ref_to_time_to_velocity,
-            ref_to_time_to_pressure)
+            ref_to_time_to_pressure,
+            ref_to_time_to_velError,
+            ref_to_time_to_preError)
 
 def generate() -> None:
     """Runs the experiment.
@@ -88,7 +94,7 @@ def generate() -> None:
 
     # define discretisation
     space_disc = get_space_discretisation_from_CONFIG(name_mesh=gcf.MESH_NAME,
-                                                      space_points=gcf.NUMBER_SPACE_POINTS,
+                                                      space_points=cf.NUMBER_SPACE_POINTS,
                                                       velocity_element=gcf.VELOCITY_ELEMENT,
                                                       velocity_degree=gcf.VELOCITY_DEGREE,
                                                       pressure_element=gcf.PRESSURE_ELEMENT,
@@ -102,9 +108,9 @@ def generate() -> None:
 
     ####### DEFINE DATA
     ### initial condition
-    #initial_velocity = knownVelocity(space_disc.mesh,space_disc.velocity_space)
     initial_velocity = initialCondition(space_disc.mesh,space_disc.velocity_space)
-    
+    #initial_velocity = _hill_wave(space_disc.mesh,space_disc.velocity_space)
+
     ### noise coefficient
     noise_coefficient = noiseCoefficient(space_disc.mesh,space_disc.velocity_space)
     
@@ -119,16 +125,16 @@ def generate() -> None:
 
     #Initialise process managers to handle data processing
     if gcf.TIME_CONVERGENCE:
-        time_convergence_velocity = ProcessManager([
-            TimeComparison(time_disc.ref_to_time_stepsize,"Linf_L2_velocity",linf_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
-            TimeComparison(time_disc.ref_to_time_stepsize,"End_time_L2_velocity",end_time_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
-            TimeComparison(time_disc.ref_to_time_stepsize,"L2_H1_velocity",l2_X_distance,h1_distance,gcf.TIME_COMPARISON_TYPE),
-            ])
-        time_convergence_pressure = ProcessManager([
-            TimeComparison(time_disc.ref_to_time_stepsize,"L2_L2_pressure",l2_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
-            TimeComparison(time_disc.ref_to_time_stepsize,"H-1_L2_pressure",h_minus1_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
-            TimeComparison(time_disc.ref_to_time_stepsize,"W-1_inf_L2_pressure",w_minus1_inf_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE)
-            ])
+        stability_check_velError = ProcessManager([
+            StabilityCheck(time_disc.ref_to_time_stepsize,"error_Linf_L2_velocity",linf_X_norm,l2_space),
+            StabilityCheck(time_disc.ref_to_time_stepsize,"error_End_time_L2_velocity",end_time_X_norm,l2_space),
+            StabilityCheck(time_disc.ref_to_time_stepsize,"error_L2_H1_velocity",l2_X_norm,h1_space),
+            StabilityCheck(time_disc.ref_to_time_stepsize,"error_L2_Hdiv_velocity",l2_X_norm,hdiv_space)
+        ])
+        stability_check_preError = ProcessManager([
+            StabilityCheck(time_disc.ref_to_time_stepsize,"error_L2_L2_pressure",l2_X_norm,l2_space),
+            StabilityCheck(time_disc.ref_to_time_stepsize,"error_H-1_L2_pressure",h_minus1_X_norm,l2_space)
+        ])
 
     if gcf.STABILITY_CHECK:
         stability_check_velocity = ProcessManager([
@@ -154,6 +160,8 @@ def generate() -> None:
     if gcf.STATISTICS_CHECK:
         statistics_velocity = StatisticsObject("velocity",time_disc.ref_to_time_grid,space_disc.velocity_space)
         statistics_pressure = StatisticsObject("pressure",time_disc.ref_to_time_grid,space_disc.pressure_space)
+        statistics_velError = StatisticsObject("velError",time_disc.ref_to_time_grid,space_disc.velocity_space)
+        statistics_preError = StatisticsObject("preError",time_disc.ref_to_time_grid,space_disc.pressure_space)
 
     if gcf.POINT_STATISTICS_CHECK:
         point_statistics_velocity = ProcessManager([
@@ -184,7 +192,9 @@ def generate() -> None:
         time_mark = process_time_ns()
         (ref_to_noise_increments, 
          ref_to_time_to_velocity, 
-         ref_to_time_to_pressure) = generate_one(time_disc=time_disc,
+         ref_to_time_to_pressure,
+         ref_to_time_to_velError, 
+         ref_to_time_to_preError) = generate_one(time_disc=time_disc,
                                                            space_disc=space_disc,
                                                            noise_coefficient=noise_coefficient,
                                                            initial_velocity=initial_velocity,
@@ -197,17 +207,8 @@ def generate() -> None:
         #update data using solution
         if gcf.TIME_CONVERGENCE:
             time_mark = process_time_ns()
-            time_to_fine_velocity = time_to_exact_velocity(mesh=space_disc.mesh,
-                                                           velocity_space=space_disc.velocity_space, 
-                                                           time_grid=time_disc.ref_to_time_grid[time_disc.refinement_levels[-1]],
-                                                           noiseIncrements=ref_to_noise_increments[time_disc.refinement_levels[-1]])
-            time_convergence_velocity.update(ref_to_time_to_velocity,time_to_fine_velocity)
-            time_to_fine_pressure = time_to_exact_pressure(mesh=space_disc.mesh,
-                                                           pressure_space=space_disc.pressure_space, 
-                                                           time_grid=time_disc.ref_to_time_grid[time_disc.refinement_levels[-1]],
-                                                           noiseIncrements=ref_to_noise_increments[time_disc.refinement_levels[-1]])
-
-            time_convergence_pressure.update(ref_to_time_to_pressure,time_to_fine_pressure)
+            stability_check_velError.update(ref_to_time_to_velError)
+            stability_check_preError.update(ref_to_time_to_preError)
             runtimes["comparison"] += process_time_ns()-time_mark
 
         if gcf.STABILITY_CHECK:
@@ -235,6 +236,8 @@ def generate() -> None:
             time_mark = process_time_ns()
             statistics_velocity.update(ref_to_time_to_velocity)
             statistics_pressure.update(ref_to_time_to_pressure)
+            statistics_velError.update(ref_to_time_to_velError)
+            statistics_preError.update(ref_to_time_to_preError)
             runtimes["statistics"] += process_time_ns()-time_mark
 
         if gcf.POINT_STATISTICS_CHECK:
@@ -253,10 +256,10 @@ def generate() -> None:
     ### storing processed data 
     if gcf.TIME_CONVERGENCE:
         logging.info(format_header("TIME CONVERGENCE") + f"\nComparisons are stored in:\t {cf.TIME_DIRECTORYNAME}/")
-        logging.info(time_convergence_velocity)
-        logging.info(time_convergence_pressure)
-        time_convergence_velocity.save(cf.TIME_DIRECTORYNAME)
-        time_convergence_pressure.save(cf.TIME_DIRECTORYNAME)
+        logging.info(stability_check_velError)
+        logging.info(stability_check_preError)
+        stability_check_velError.save(cf.TIME_DIRECTORYNAME)
+        stability_check_preError.save(cf.TIME_DIRECTORYNAME)
 
     if gcf.STABILITY_CHECK:
         logging.info(format_header("STABILITY CHECK") + f"\nStability checks are stored in:\t {cf.STABILITY_DIRECTORYNAME}/")
@@ -282,6 +285,8 @@ def generate() -> None:
         logging.info(format_header("STATISTICS") + f"\nStatistics are stored in:\t {cf.VTK_DIRECTORY + '/' + cf.STATISTICS_DIRECTORYNAME}/")
         statistics_velocity.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME)
         statistics_pressure.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME)
+        statistics_velError.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME)
+        statistics_preError.save(cf.VTK_DIRECTORY + "/" + cf.STATISTICS_DIRECTORYNAME)
 
     if gcf.POINT_STATISTICS_CHECK:
         logging.info(format_header("POINT STATISTICS") + f"\nPoint statistics are stored in:\t {cf.POINT_STATISTICS_DIRECTORYNAME}/")

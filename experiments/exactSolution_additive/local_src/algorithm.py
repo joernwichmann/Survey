@@ -5,6 +5,22 @@ from tqdm import tqdm
 from src.discretisation.time import trajectory_to_incremets
 from src.discretisation.space import SpaceDiscretisation
 
+def _poly(x,y):
+    return 2*x*x*(1-x)*(1-x)*y*(y-1)*(2*y-1)
+
+def exact_velocity(mesh, velocity_space) -> Function:
+    x, y = SpatialCoordinate(mesh)
+    expr = as_vector([
+        _poly(x,y),
+        -1*_poly(y,x)
+        ])
+    return project(expr, velocity_space)
+
+def exact_pressure(mesh, pressure_space) -> Function:
+    x, y = SpatialCoordinate(mesh)
+    expr = x*x + y*y - 2.0/3.0
+    return project(expr, pressure_space)
+
 def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
                            time_grid: list[float],
                            noise_increments: list[int],
@@ -41,12 +57,28 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
     time = initial_time
     accumulatedNoise = 0
 
- 
+    #approximate solution
     time_to_velocity = dict()
     time_to_pressure = dict()
 
     time_to_velocity[time] = deepcopy(uold)
     time_to_pressure[time] = deepcopy(pold)
+
+    #handling of exact solution
+    time_to_velError = dict()
+    time_to_preError = dict()
+
+    exactVelocity = exact_velocity(space_disc.mesh,space_disc.velocity_space)
+    exactPressure = exact_pressure(space_disc.mesh,space_disc.pressure_space)
+
+    solError = Function(space_disc.mixed_space)
+    velError, preError = solError.subfunctions
+
+    velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - uold.dat.data
+    preError.dat.data[:] = exactPressure.dat.data*time - pold.dat.data
+
+    time_to_velError[time] = deepcopy(velError)
+    time_to_preError[time] = deepcopy(preError)
 
     for index in tqdm(range(len(time_increments))):
         accumulatedNoise += noise_increments[index]
@@ -67,4 +99,10 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
 
         upold.assign(up)
 
-    return time_to_velocity, time_to_pressure
+        velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - uold.dat.data
+        preError.dat.data[:] = exactPressure.dat.data*time - pold.dat.data
+
+        time_to_velError[time] = deepcopy(velError)
+        time_to_preError[time] = deepcopy(preError)
+
+    return time_to_velocity, time_to_pressure, time_to_velError, time_to_preError

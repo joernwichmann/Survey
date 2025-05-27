@@ -22,7 +22,6 @@ PRESSURE_ELEMENT: str = "CG"    #see firedrake doc for available spaces
 PRESSURE_DEGREE: int = 1
 
 # Mesh
-NUMBER_SPACE_POINTS: int = 16
 MESH_NAME: str = "unit square"  #see 'src.discretisation.mesh' for available choices
 
 # Monte Carlo
@@ -46,7 +45,7 @@ IND_ENERGY_CHECK: bool = False
 IND_ENERGY_NUMBER: int = 100
 
 #Statistics
-STATISTICS_CHECK: bool = True
+STATISTICS_CHECK: bool = False
 
 #Point statistics
 POINT_STATISTICS_CHECK: bool = False

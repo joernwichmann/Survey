@@ -75,3 +75,11 @@ def time_to_exact_pressure(mesh, pressure_space, time_grid, noiseIncrements) -> 
     exprFunction = project(expr, pressure_space)
     return {time: exprFunction*time for index, time in enumerate(time_grid)}
 
+def _hill_wave(mesh, velocity_space) -> Function:
+    x, y = SpatialCoordinate(mesh)
+    expr = as_vector([
+        sin(pi*x)*sin(pi*y),
+        sin(2*pi*x)*sin(2*pi*y)
+        ])
+    return project(expr, velocity_space)
+
