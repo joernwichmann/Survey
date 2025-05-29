@@ -58,28 +58,3 @@ def bodyforce2(mesh: MeshGeometry, velocity_space: FunctionSpace) -> Function:
         y
         ])
     return project(expr, velocity_space)
-
-def time_to_exact_velocity(mesh, velocity_space, time_grid, noiseIncrements) -> dict[float,Function]:
-    x, y = SpatialCoordinate(mesh)
-    expr = as_vector([
-        _poly(x,y),
-        -1*_poly(y,x)
-        ])
-    W= increments_to_trajectory(0,noiseIncrements)
-    exprFunction = project(expr, velocity_space)
-    return {time: exprFunction*(1+W[index]) for index, time in enumerate(time_grid)}
-
-def time_to_exact_pressure(mesh, pressure_space, time_grid, noiseIncrements) -> dict[float,Function]:
-    x, y = SpatialCoordinate(mesh)
-    expr = x*x + y*y - 2.0/3.0
-    exprFunction = project(expr, pressure_space)
-    return {time: exprFunction*time for index, time in enumerate(time_grid)}
-
-def _hill_wave(mesh, velocity_space) -> Function:
-    x, y = SpatialCoordinate(mesh)
-    expr = as_vector([
-        sin(pi*x)*sin(pi*y),
-        sin(2*pi*x)*sin(2*pi*y)
-        ])
-    return project(expr, velocity_space)
-

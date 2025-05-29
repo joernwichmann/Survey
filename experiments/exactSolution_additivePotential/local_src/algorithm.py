@@ -92,8 +92,10 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
         accumulatedNoise += dNoise
         W.assign(accumulatedNoise)
         dW.assign(dNoise)
-        tau.assign(time_increments[index])
-        time += time_increments[index]
+
+        dtime = time_increments[index]
+        time += dtime
+        tau.assign(dtime)
         t.assign(time)
             
         solve(a == L, up, bcs=space_disc.bcs_mixed, nullspace=space_disc.null)
@@ -108,7 +110,7 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
         upold.assign(up)
 
         velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - uold.dat.data
-        preError.dat.data[:] = exactPressureDet.dat.data*time + exactPressureSto.dat.data*dNoise - pold.dat.data
+        preError.dat.data[:] = exactPressureDet.dat.data*time + exactPressureSto.dat.data*(dNoise/dtime) - pold.dat.data
 
         time_to_velError[time] = deepcopy(velError)
         time_to_preError[time] = deepcopy(preError)

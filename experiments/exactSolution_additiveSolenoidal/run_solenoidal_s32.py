@@ -33,7 +33,7 @@ from src.postprocess.increments_check import IncrementCheck
 from src.postprocess.processmanager import ProcessManager
 
 from local_src.algorithm import implicitEuler_mixedFEM
-from local_src.solenoidal import noiseCoefficient, initialCondition, bodyforce1, bodyforce2, _hill_wave
+from local_src.solenoidal import noiseCoefficient, initialCondition, bodyforce1, bodyforce2
 
 #load global and lokal configs
 from configs import cfs_solenoidal_s32 as cf
@@ -109,8 +109,7 @@ def generate() -> None:
     ####### DEFINE DATA
     ### initial condition
     initial_velocity = initialCondition(space_disc.mesh,space_disc.velocity_space)
-    #initial_velocity = _hill_wave(space_disc.mesh,space_disc.velocity_space)
-
+    
     ### noise coefficient
     noise_coefficient = noiseCoefficient(space_disc.mesh,space_disc.velocity_space)
     
