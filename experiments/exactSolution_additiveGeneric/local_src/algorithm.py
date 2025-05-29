@@ -53,7 +53,7 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
     uold.assign(initial_condition)
 
     a = ( inner(u,v) + tau*( 1.0/Re*inner(grad(u), grad(v)) - inner(p, div(v)) + inner(div(u), q) ) )*dx
-    L = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1,v) + 2*tau*t*inner(bodyforce2,v) + dW*inner(noise_coefficient,v) )*dx
+    L = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1,v)*(1+W) + 2*tau*t*inner(bodyforce2,v) + dW*inner(noise_coefficient,v) )*dx
 
     up = Function(space_disc.mixed_space)
     u, p = up.subfunctions
@@ -81,7 +81,7 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
     solError = Function(space_disc.mixed_space)
     velError, preError = solError.subfunctions
 
-    velError.dat.data[:] = exactVelocity.dat.data - uold.dat.data
+    velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - uold.dat.data
     preError.dat.data[:] = exactPressureDet.dat.data*time + exactPressureSto.dat.data*dNoise - pold.dat.data
 
     time_to_velError[time] = deepcopy(velError)
@@ -109,7 +109,7 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
 
         upold.assign(up)
 
-        velError.dat.data[:] = exactVelocity.dat.data - uold.dat.data
+        velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - uold.dat.data
         preError.dat.data[:] = exactPressureDet.dat.data*time + exactPressureSto.dat.data*(dNoise/dtime) - pold.dat.data
 
         time_to_velError[time] = deepcopy(velError)

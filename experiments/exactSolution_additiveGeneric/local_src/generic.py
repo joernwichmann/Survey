@@ -14,8 +14,8 @@ def noiseCoefficient(mesh: MeshGeometry, velocity_space: FunctionSpace) -> Funct
     """
     x, y = SpatialCoordinate(mesh)
     expr = as_vector([
-        _poly(y,x),
-        _poly(x,y)
+        _poly(x,y) + _poly(y,x),
+        -1*_poly(y,x) + _poly(x,y)
         ])
     return project(expr, velocity_space)
 
