@@ -15,7 +15,7 @@ def integrate_in_time(time_to_function: dict[float, Function]) -> dict[float, Fu
     time_to_int_function = dict()
     time_to_int_function[sorted_time[0]] = time_to_function[sorted_time[0]]
     for k in range(1,len(sorted_time)):
-        time_to_int_function[sorted_time[k]] = time_to_function[sorted_time[k]]*(sorted_time[k] - sorted_time[k-1])
+        time_to_int_function[sorted_time[k]] = time_to_int_function[sorted_time[k-1]] + time_to_function[sorted_time[k]]*(sorted_time[k] - sorted_time[k-1])
     return time_to_int_function
 
 #implementation
