@@ -2,6 +2,7 @@
 from numpy import sqrt
 from firedrake import Function
 from typing import Callable, TypeAlias
+from copy import deepcopy
 
 from src.math.norms.space import SpaceNorm
 
@@ -13,9 +14,11 @@ BochnerTimeNorm: TypeAlias = Callable[[dict[float, Function],SpaceNorm],float]
 def integrate_in_time(time_to_function: dict[float, Function]) -> dict[float, Function]:
     sorted_time = sorted(list(time_to_function.keys()))
     time_to_int_function = dict()
-    time_to_int_function[sorted_time[0]] = time_to_function[sorted_time[0]]
+    integratedFunction = time_to_function[sorted_time[0]]
+    time_to_int_function[sorted_time[0]] = deepcopy(integratedFunction)
     for k in range(1,len(sorted_time)):
-        time_to_int_function[sorted_time[k]] = time_to_int_function[sorted_time[k-1]] + time_to_function[sorted_time[k]]*(sorted_time[k] - sorted_time[k-1])
+        integratedFunction.dat.data[:] = integratedFunction.dat.data + time_to_function[sorted_time[k]].dat.data*(sorted_time[k] - sorted_time[k-1])
+        time_to_int_function[sorted_time[k]] = deepcopy(integratedFunction)
     return time_to_int_function
 
 #implementation
