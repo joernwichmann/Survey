@@ -47,6 +47,6 @@ def exact_pressure(x, y):
     expr = x*x + y*y
     return expr
 
-def transformation(x,y,accumulatedNoise):
-    return x+accumulatedNoise, y+accumulatedNoise
+def transformation(x,y,expW):
+    return x*expW, y*expW
 

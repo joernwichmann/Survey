@@ -23,7 +23,9 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
     Re = Constant(Reynolds_number)
     tau = Constant(1.0)
     dW = Constant(1.0)
-    W = Constant(0.0)
+    expW = Constant(1.0)
+    exp_1W = Constant(1.0)
+    exp_2W = Constant(1.0)
     t = Constant(1.0)
 
     initial_time, time_increments = trajectory_to_incremets(time_grid)
@@ -32,15 +34,15 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
     dNoise = 0
 
     x, y = SpatialCoordinate(space_disc.mesh)
-    xhat, yhat = transformation(x,y,W)
+    xhat, yhat = transformation(x,y,expW)
 
     upold = Function(space_disc.mixed_space)
     uold, pold = upold.subfunctions
 
     uold.assign(project(initialCondition(x,y),space_disc.velocity_space))
 
-    a = ( inner(u,v) + tau*( 1.0/Re*inner(grad(u), grad(v)) - inner(p, div(v)) + inner(div(u), q) ) - Lambda*dW/2.0*inner(dot(grad(u), as_vector([1,1])), v) )*dx
-    L = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1(xhat,yhat),v)+ 2*tau*t*inner(bodyforce2(xhat,yhat),v) + Lambda*dW/2.0*inner(dot(grad(uold), as_vector([1,1])), v) )*dx
+    a = ( inner(u,v) + tau*( 1.0/Re*inner(grad(u), grad(v)) - inner(p, div(v)) + inner(div(u), q) ) - Lambda*dW/2.0*inner(dot(grad(u), as_vector([x,y])), v) )*dx
+    L = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1(xhat,yhat),v)*(2-exp_2W)+ 2*tau*t*inner(bodyforce2(xhat,yhat),v)*(2-exp_1W) + Lambda*dW/2.0*inner(dot(grad(uold), as_vector([x,y])), v) )*dx
 
     up = Function(space_disc.mixed_space)
     u, p = up.subfunctions
@@ -75,7 +77,9 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
         dNoise = noise_increments[index]
         accumulatedNoise += Lambda*dNoise
         dW.assign(dNoise)
-        W.assign(accumulatedNoise)
+        expW.assign(exp(Lambda*accumulatedNoise))
+        exp_1W.assign(exp(-Lambda*accumulatedNoise))
+        exp_2W.assign(exp(-2*Lambda*accumulatedNoise))
 
         dtime = time_increments[index]
         time += dtime

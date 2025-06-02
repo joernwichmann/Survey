@@ -1,6 +1,6 @@
 """Contains local parameter configuration."""
 ### Experimentname
-NAME_EXPERIMENT: str = "transportConstant_s8"
+NAME_EXPERIMENT: str = "transportLinear_s8"
 
 ### Algorithm
 ALGORITHM_NAME: str =  "Implicit Euler mixed FEM" #see src.algorithms.select.py for available choices
