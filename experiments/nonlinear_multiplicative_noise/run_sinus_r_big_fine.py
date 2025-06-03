@@ -19,7 +19,7 @@ from src.string_formatting import format_runtime, format_header
 from src.utils import logstring_to_logger
 
 from src.math.distances.space import l2_distance, h1_distance, V_distance, V_sym_distance
-from src.math.distances.Bochner_time import linf_X_distance, l2_X_distance, end_time_X_distance, h_minus1_X_distance, w_minus1_inf_X_distance
+from src.math.distances.Bochner_time import linf_X_distance, l2_X_distance, end_time_X_distance, h_minus1_X_distance, w_minus1_inf_X_distance, end_time_integrated_X_distance
 from src.math.norms.space import l2_space, h1_space, hdiv_space
 from src.math.norms.Bochner_time import linf_X_norm, l2_X_norm, end_time_X_norm, h_minus1_X_norm
 from src.math.energy import kinetic_energy, potential_energy
@@ -35,6 +35,7 @@ from src.exact_data import knownVelocity, knownPressure, knownForcing
 
 from local_src.algorithm import implicitEuler_mixedFEM_multi
 from local_src.noiseCoefficients import COS_BASIS, SIN_BASIS
+from local_src.weakMeasures import kinetic_distance, SIN_distance
 
 #load global and lokal configs
 from configs import cfs_sinus_r_big_fine as cf
@@ -124,11 +125,15 @@ def generate() -> None:
             TimeComparison(time_disc.ref_to_time_stepsize,"Linf_L2_velocity",linf_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
             TimeComparison(time_disc.ref_to_time_stepsize,"End_time_L2_velocity",end_time_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
             TimeComparison(time_disc.ref_to_time_stepsize,"L2_H1_velocity",l2_X_distance,h1_distance,gcf.TIME_COMPARISON_TYPE),
+            TimeComparison(time_disc.ref_to_time_stepsize,"Weak_kin_velocity",end_time_X_distance,kinetic_distance,gcf.TIME_COMPARISON_TYPE),
+            TimeComparison(time_disc.ref_to_time_stepsize,"Weak_sin_velocity",end_time_X_distance,SIN_distance,gcf.TIME_COMPARISON_TYPE),
             ])
         time_convergence_pressure = ProcessManager([
             TimeComparison(time_disc.ref_to_time_stepsize,"L2_L2_pressure",l2_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
             TimeComparison(time_disc.ref_to_time_stepsize,"H-1_L2_pressure",h_minus1_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
-            TimeComparison(time_disc.ref_to_time_stepsize,"W-1_inf_L2_pressure",w_minus1_inf_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE)
+            TimeComparison(time_disc.ref_to_time_stepsize,"W-1_inf_L2_pressure",w_minus1_inf_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
+            TimeComparison(time_disc.ref_to_time_stepsize,"Weak_kin_pressure",end_time_integrated_X_distance,kinetic_distance,gcf.TIME_COMPARISON_TYPE),
+            TimeComparison(time_disc.ref_to_time_stepsize,"Weak_sin_pressure",end_time_integrated_X_distance,SIN_distance,gcf.TIME_COMPARISON_TYPE),
             ])
 
     if gcf.STABILITY_CHECK:
