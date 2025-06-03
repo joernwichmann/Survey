@@ -27,7 +27,7 @@ def project_left(time: float, time_grid: list[float]) -> float:
 def integrate_in_time(time_to_function: dict[float, Function]) -> dict[float, Function]:
     sorted_time = sorted(list(time_to_function.keys()))
     time_to_int_function = dict()
-    integratedFunction = time_to_function[sorted_time[0]]
+    integratedFunction = deepcopy(time_to_function[sorted_time[0]])
     time_to_int_function[sorted_time[0]] = deepcopy(integratedFunction)
     for k in range(1,len(sorted_time)):
         integratedFunction.dat.data[:] = integratedFunction.dat.data + time_to_function[sorted_time[k]].dat.data*(sorted_time[k] - sorted_time[k-1])
@@ -118,6 +118,12 @@ def w_minus1_inf_X_distance(time_to_function1: dict[float, Function], time_to_fu
     time_to_int_function2 = integrate_in_time(time_to_function2)
 
     return linf_X_distance(time_to_int_function1, time_to_int_function2, distance_X)
+
+def end_time_integrated_X_distance(time_to_function1: dict[float, Function], time_to_function2: dict[float,Function], distance_X: SpaceDistance) -> float:
+    """Computes the 'X' distance in space of 'time -> function1' and 'time -> function2' dictionaries after time integration at the endtime. """
+    time_to_int_function1 = integrate_in_time(time_to_function1)
+    time_to_int_function2 = integrate_in_time(time_to_function2)
+    return end_time_X_distance(time_to_int_function1,time_to_int_function2,distance_X)
 
 def nikolskii_minushalf_X_distance(time_to_function1: dict[float, Function], time_to_function2: dict[float,Function], norm_X: SpaceNorm) -> float:
     """Computes the N{-1/2,2} in time and 'X' in space distance of 'time -> function1' and 'time -> function2' dictionaries. 
