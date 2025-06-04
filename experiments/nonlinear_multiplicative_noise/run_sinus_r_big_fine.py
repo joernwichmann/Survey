@@ -109,7 +109,7 @@ def generate() -> None:
     initial_velocity = Function(space_disc.velocity_space)
     
     ### noise coefficient
-    noise_coefficients = SIN_BASIS(cf.TRUNCATION_INDEX_NOISE,space_disc.mesh,space_disc.velocity_space,cf.R_VALUE_NOISE)
+    noise_coefficients = SIN_BASIS(gcf.TRUNCATION_INDEX_NOISE,space_disc.mesh,space_disc.velocity_space,cf.R_VALUE_NOISE)
     logging.info(f"\nNUMBER OF NOISE COEFFICIENTS:\t{len(noise_coefficients)}")
     
     logging.info(f"\nREYNOLDS NUMBER:\t{gcf.REYNOLDS_NUMBER}")

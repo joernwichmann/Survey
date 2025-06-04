@@ -7,6 +7,8 @@ LOG_LEVEL: str = "info"  #supported levels: debug, info, warning, error, critica
 MODEL_NAME: str = "Stokes" #see src.algorithms.select.py for available choices
 REYNOLDS_NUMBER: float = 1
 
+TRUNCATION_INDEX_NOISE: int = 4
+
 GAMMA: float = 1    #Hoelder index of time-regularity of pressure
 
 # Time

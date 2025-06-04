@@ -7,12 +7,14 @@ LOG_LEVEL: str = "info"  #supported levels: debug, info, warning, error, critica
 MODEL_NAME: str = "Stokes" #see src.algorithms.select.py for available choices
 REYNOLDS_NUMBER: float = 1
 
+TRUNCATION_INDEX_NOISE: int = 4
+
 GAMMA: float = 1    #Hoelder index of time-regularity of pressure
 
 # Time
 INITIAL_TIME: float = 0
 END_TIME: float = 1
-REFINEMENT_LEVELS: list[int] = list(range(3,10))
+REFINEMENT_LEVELS: list[int] = list(range(6,12))
 
 # Elements
 VELOCITY_ELEMENT: str = "CG"    #see firedrake doc for available spaces
@@ -26,7 +28,7 @@ NUMBER_SPACE_POINTS: int = 16
 MESH_NAME: str = "unit square"  #see 'src.discretisation.mesh' for available choices
 
 # Monte Carlo
-MC_SAMPLES: int = 500
+MC_SAMPLES: int = 10
 NOISE_INCREMENTS: str = "classical" # see 'src.noise' for available choices
 
 

@@ -5,7 +5,6 @@ NAME_EXPERIMENT: str = "cos_r_big_fine"
 ### Algorithm
 ALGORITHM_NAME: str =  "Implicit Euler mixed FEM" #see src.algorithms.select.py for available choices
 
-TRUNCATION_INDEX_NOISE: int = 6
 R_VALUE_NOISE: float = 2.1
 
 ################               FILE/DIRECTORY NAMES               ############################
