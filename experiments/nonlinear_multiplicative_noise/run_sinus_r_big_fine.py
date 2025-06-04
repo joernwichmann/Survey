@@ -25,6 +25,7 @@ from src.math.norms.Bochner_time import linf_X_norm, l2_X_norm, end_time_X_norm,
 from src.math.energy import kinetic_energy, potential_energy
 from src.discretisation.projections import HL_projection_withBC
 from src.postprocess.time_convergence import TimeComparison
+from src.postprocess.time_convergence_weak import TimeComparisonWeak
 from src.postprocess.stability_check import StabilityCheck
 from src.postprocess.energy_check import Energy
 from src.postprocess.statistics import StatisticsObject
@@ -125,15 +126,21 @@ def generate() -> None:
             TimeComparison(time_disc.ref_to_time_stepsize,"Linf_L2_velocity",linf_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
             TimeComparison(time_disc.ref_to_time_stepsize,"End_time_L2_velocity",end_time_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
             TimeComparison(time_disc.ref_to_time_stepsize,"L2_H1_velocity",l2_X_distance,h1_distance,gcf.TIME_COMPARISON_TYPE),
-            TimeComparison(time_disc.ref_to_time_stepsize,"Weak_kin_velocity",end_time_X_distance,kinetic_distance,gcf.TIME_COMPARISON_TYPE),
-            TimeComparison(time_disc.ref_to_time_stepsize,"Weak_sin_velocity",end_time_X_distance,SIN_distance,gcf.TIME_COMPARISON_TYPE),
+            ])
+        time_convergence_velocity_weak = ProcessManager([
+            TimeComparisonWeak(time_disc.ref_to_time_stepsize,"Weak_kin_velocity",end_time_X_distance,kinetic_distance,gcf.TIME_COMPARISON_TYPE),
+            TimeComparisonWeak(time_disc.ref_to_time_stepsize,"Weak_sin_velocity",end_time_X_distance,SIN_distance,gcf.TIME_COMPARISON_TYPE),
             ])
         time_convergence_pressure = ProcessManager([
             TimeComparison(time_disc.ref_to_time_stepsize,"L2_L2_pressure",l2_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
             TimeComparison(time_disc.ref_to_time_stepsize,"H-1_L2_pressure",h_minus1_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
             TimeComparison(time_disc.ref_to_time_stepsize,"W-1_inf_L2_pressure",w_minus1_inf_X_distance,l2_distance,gcf.TIME_COMPARISON_TYPE),
-            TimeComparison(time_disc.ref_to_time_stepsize,"Weak_kin_pressure",end_time_integrated_X_distance,kinetic_distance,gcf.TIME_COMPARISON_TYPE),
-            TimeComparison(time_disc.ref_to_time_stepsize,"Weak_sin_pressure",end_time_integrated_X_distance,SIN_distance,gcf.TIME_COMPARISON_TYPE),
+            ])
+        time_convergence_pressure_weak = ProcessManager([
+            TimeComparisonWeak(time_disc.ref_to_time_stepsize,"Weak_kin_pressure",end_time_X_distance,kinetic_distance,gcf.TIME_COMPARISON_TYPE),
+            TimeComparisonWeak(time_disc.ref_to_time_stepsize,"Weak_sin_pressure",end_time_X_distance,SIN_distance,gcf.TIME_COMPARISON_TYPE),
+            TimeComparisonWeak(time_disc.ref_to_time_stepsize,"Weak_kin_Intpressure",end_time_integrated_X_distance,kinetic_distance,gcf.TIME_COMPARISON_TYPE),
+            TimeComparisonWeak(time_disc.ref_to_time_stepsize,"Weak_sin_Intpressure",end_time_integrated_X_distance,SIN_distance,gcf.TIME_COMPARISON_TYPE),
             ])
 
     if gcf.STABILITY_CHECK:
@@ -204,8 +211,10 @@ def generate() -> None:
             time_mark = process_time_ns()
             time_to_fine_velocity = ref_to_time_to_velocity[time_disc.refinement_levels[-1]]
             time_convergence_velocity.update(ref_to_time_to_velocity,time_to_fine_velocity)
+            time_convergence_velocity_weak.update(ref_to_time_to_velocity,time_to_fine_velocity)
             time_to_fine_pressure = ref_to_time_to_pressure[time_disc.refinement_levels[-1]]
             time_convergence_pressure.update(ref_to_time_to_pressure,time_to_fine_pressure)
+            time_convergence_pressure_weak.update(ref_to_time_to_pressure,time_to_fine_pressure)
             runtimes["comparison"] += process_time_ns()-time_mark
 
         if gcf.STABILITY_CHECK:
@@ -255,6 +264,10 @@ def generate() -> None:
         logging.info(time_convergence_pressure)
         time_convergence_velocity.save(cf.TIME_DIRECTORYNAME)
         time_convergence_pressure.save(cf.TIME_DIRECTORYNAME)
+        logging.info(time_convergence_velocity_weak)
+        logging.info(time_convergence_pressure_weak)
+        time_convergence_velocity_weak.save(cf.TIME_DIRECTORYNAME)
+        time_convergence_pressure_weak.save(cf.TIME_DIRECTORYNAME)
 
     if gcf.STABILITY_CHECK:
         logging.info(format_header("STABILITY CHECK") + f"\nStability checks are stored in:\t {cf.STABILITY_DIRECTORYNAME}/")
