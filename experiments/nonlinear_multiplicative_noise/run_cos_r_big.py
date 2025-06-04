@@ -32,7 +32,6 @@ from src.postprocess.statistics import StatisticsObject
 from src.postprocess.point_statistics import PointStatistics
 from src.postprocess.increments_check import IncrementCheck
 from src.postprocess.processmanager import ProcessManager
-from src.exact_data import knownVelocity, knownPressure, knownForcing
 
 from local_src.algorithm import implicitEuler_mixedFEM_multi
 from local_src.noiseCoefficients import COS_BASIS, SIN_BASIS
@@ -46,7 +45,6 @@ def generate_one(time_disc: TimeDiscretisation,
                  space_disc: SpaceDiscretisation,
                  noise_coefficients: list[Function],
                  initial_velocity: Function,
-                 ref_to_time_to_det_forcing: dict[int,dict[float,Function]],
                  algorithm: Algorithm,
                  sampling_strategy: SamplingStrategy) -> tuple[dict[int,list[float]],
                                                                dict[int,dict[float,Function]],
@@ -72,7 +70,6 @@ def generate_one(time_disc: TimeDiscretisation,
             time_grid=time_disc.ref_to_time_grid[level],
             noise_coeff_to_noise_increments= noise_coeff_to_noise_increments,
             initial_condition=initial_velocity,
-            time_to_det_forcing = ref_to_time_to_det_forcing[level],
             Reynolds_number=gcf.REYNOLDS_NUMBER
             )
     return (noise_coeff_to_ref_to_noise_increments,
@@ -105,7 +102,6 @@ def generate() -> None:
 
     ####### DEFINE DATA
     ### initial condition
-    #initial_velocity = knownVelocity(space_disc.mesh,space_disc.velocity_space)
     initial_velocity = Function(space_disc.velocity_space)
     
     ### noise coefficient
@@ -113,9 +109,6 @@ def generate() -> None:
     logging.info(f"\nNUMBER OF NOISE COEFFICIENTS:\t{len(noise_coefficients)}")
     
     logging.info(f"\nREYNOLDS NUMBER:\t{gcf.REYNOLDS_NUMBER}")
-
-    ### deterministic forcing
-    ref_to_time_to_det_forcing = {level: {time: knownForcing(time,gcf.GAMMA,1/gcf.REYNOLDS_NUMBER,space_disc.mesh,space_disc.velocity_space) for time in time_disc.ref_to_time_grid[level]} for level in time_disc.refinement_levels}
 
     #select sampling
     sampling_strategy = select_sampling(gcf.NOISE_INCREMENTS)
@@ -189,6 +182,7 @@ def generate() -> None:
 
     print(format_header("START MONTE CARLO ITERATION") + f"\nRequested samples:\t{gcf.MC_SAMPLES}")
     new_seeds = range(gcf.MC_SAMPLES)
+    logging.info(format_header("START MONTE CARLO ITERATION") + f"\nRequested samples:\t{gcf.MC_SAMPLES}")
 
     ### start MC iteration 
     for k in new_seeds:
@@ -201,7 +195,6 @@ def generate() -> None:
                                                            space_disc=space_disc,
                                                            noise_coefficients=noise_coefficients,
                                                            initial_velocity=initial_velocity,
-                                                           ref_to_time_to_det_forcing=ref_to_time_to_det_forcing,
                                                            algorithm=implicitEuler_mixedFEM_multi,
                                                            sampling_strategy=sampling_strategy)
         runtimes["solving"] += process_time_ns()-time_mark

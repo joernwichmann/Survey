@@ -13,7 +13,6 @@ def implicitEuler_mixedFEM_multi(space_disc: SpaceDiscretisation,
                            time_grid: list[float],
                            noise_coeff_to_noise_increments: dict[Function,list[int]],
                            initial_condition: Function,
-                           time_to_det_forcing: dict[float,Function] | None = None, 
                            Reynolds_number: float = 1) -> tuple[dict[float,Function], dict[float,Function]]:
     """Solve Stokes system with mixed finite elements for multiplicative noise. 
     
@@ -28,7 +27,6 @@ def implicitEuler_mixedFEM_multi(space_disc: SpaceDiscretisation,
 
     upold = Function(space_disc.mixed_space)
     uold, pold = upold.subfunctions
-    det_forcing, _ = Function(space_disc.mixed_space).subfunctions
 
     uold.assign(initial_condition)
 
@@ -55,12 +53,6 @@ def implicitEuler_mixedFEM_multi(space_disc: SpaceDiscretisation,
             noise_coeff_to_dW[noise_coeff].assign(noise_coeff_to_noise_increments[noise_coeff][index])
         tau.assign(time_increments[index])
         time += time_increments[index]
-        if time_to_det_forcing:
-            try:
-                det_forcing.assign(time_to_det_forcing[time])
-            except KeyError as k:
-                print(f"Deterministic forcing couldn't be set.\nRequested time:\t {time}\nAvailable times:\t {list(time_to_det_forcing.keys())}")
-                raise k
             
         solve(a == L, up, bcs=space_disc.bcs_mixed, nullspace=space_disc.null)
 
