@@ -13,8 +13,8 @@ GAMMA: float = 1    #Hoelder index of time-regularity of pressure
 
 # Time
 INITIAL_TIME: float = 0
-END_TIME: float = 1
-REFINEMENT_LEVELS: list[int] = list(range(6,13))
+END_TIME: float = 0.0625
+REFINEMENT_LEVELS: list[int] = list(range(3,10))
 
 # Elements
 VELOCITY_ELEMENT: str = "CG"    #see firedrake doc for available spaces
@@ -28,7 +28,7 @@ NUMBER_SPACE_POINTS: int = 8
 MESH_NAME: str = "unit square"  #see 'src.discretisation.mesh' for available choices
 
 # Monte Carlo
-MC_SAMPLES: int = 1000
+MC_SAMPLES: int = 500
 NOISE_INCREMENTS: str = "classical" # see 'src.noise' for available choices
 
 

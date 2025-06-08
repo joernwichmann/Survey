@@ -47,7 +47,7 @@ class TimeDiscretisation:
         out += "\n\t ref level \t | \t stepsize \t | \t no of steps \t"
         out += format_header("")
         for level in self.refinement_levels:
-            out += f"\n\t {level} \t \t | \t {self.ref_to_time_stepsize[level]:.03f} \t \t | \t {_time_steps(level)} \t"
+            out += f"\n\t {level} \t \t | \t {self.ref_to_time_stepsize[level]:.06f} \t \t | \t {_time_steps(level)} \t"
         return out
     
 

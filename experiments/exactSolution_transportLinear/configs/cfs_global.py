@@ -11,7 +11,7 @@ GAMMA: float = 1    #Hoelder index of time-regularity of pressure
 
 # Time
 INITIAL_TIME: float = 0
-END_TIME: float = 1
+END_TIME: float = 0.0625
 REFINEMENT_LEVELS: list[int] = list(range(3,10))
 
 # Elements
