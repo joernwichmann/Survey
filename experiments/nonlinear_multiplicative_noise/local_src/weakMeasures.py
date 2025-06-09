@@ -14,3 +14,6 @@ def SIN_distance(function1, function2) -> float:
 
 def test():
     return
+
+def test2():
+    return
