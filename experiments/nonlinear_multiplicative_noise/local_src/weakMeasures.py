@@ -11,3 +11,6 @@ def SIN_distance(function1, function2) -> float:
     integratedFunc1 = assemble(sin(sqrt(inner(function1,function1)))*dx)
     integratedFunc2 = assemble(sin(sqrt(inner(function2,function2)))*dx)
     return integratedFunc1 - integratedFunc2
+
+def test():
+    return
