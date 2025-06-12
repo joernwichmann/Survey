@@ -11,7 +11,7 @@ GAMMA: float = 1    #Hoelder index of time-regularity of pressure
 
 # Time
 INITIAL_TIME: float = 0
-END_TIME: float = 1
+END_TIME: float = 0.0625
 REFINEMENT_LEVELS: list[int] = list(range(3,10))
 
 # Elements
@@ -25,7 +25,7 @@ PRESSURE_DEGREE: int = 1
 MESH_NAME: str = "unit square"  #see 'src.discretisation.mesh' for available choices
 
 # Monte Carlo
-MC_SAMPLES: int = 2
+MC_SAMPLES: int = 1000
 NOISE_INCREMENTS: str = "classical" # see 'src.noise' for available choices
 
 
@@ -38,7 +38,7 @@ TIME_COMPARISON_TYPE: str = "absolute"       ## "absolute" and "relative" are su
 STABILITY_CHECK: bool = True
 
 #Mean energy
-ENERGY_CHECK: bool = True
+ENERGY_CHECK: bool = False
 
 #Individual energy
 IND_ENERGY_CHECK: bool = False
