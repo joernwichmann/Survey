@@ -7,7 +7,7 @@ LOG_LEVEL: str = "info"  #supported levels: debug, info, warning, error, critica
 MODEL_NAME: str = "Stokes" #see src.algorithms.select.py for available choices
 REYNOLDS_NUMBER: float = 1
 
-TRUNCATION_INDEX_NOISE: int = 4
+TRUNCATION_INDEX_NOISE: int = 3
 
 GAMMA: float = 1    #Hoelder index of time-regularity of pressure
 
@@ -24,7 +24,7 @@ PRESSURE_ELEMENT: str = "CG"    #see firedrake doc for available spaces
 PRESSURE_DEGREE: int = 1
 
 # Mesh
-NUMBER_SPACE_POINTS: int = 16
+NUMBER_SPACE_POINTS: int = 32
 MESH_NAME: str = "unit square"  #see 'src.discretisation.mesh' for available choices
 
 # Monte Carlo
