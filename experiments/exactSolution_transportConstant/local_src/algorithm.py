@@ -7,12 +7,24 @@ from src.discretisation.space import SpaceDiscretisation
 
 from local_src.transport import initialCondition, transformation, noiseCoefficient, exact_pressure, exact_velocity, bodyforce1, bodyforce2
 
+DIRECT_SOLVE_PARAMETERS = {'snes_max_it': 120,
+           "snes_atol": 1e-8,
+           "snes_rtol": 1e-8,
+           'snes_linesearch_type': 'nleqerr',
+           'ksp_type': 'preonly',
+           'pc_type': 'lu', 
+           'mat_type': 'aij',
+           'pc_factor_mat_solver_type': 'mumps',
+           "mat_mumps_icntl_14": 5000,
+           "mat_mumps_icntl_24": 1,
+           }
+
 
 def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
                            time_grid: list[float],
                            noise_increments: list[int],
                            Reynolds_number: float = 1,
-                           Lambda: float = 0.1) -> tuple[dict[float,Function], dict[float,Function]]:
+                           Lambda: float = 1) -> tuple[dict[float,Function], dict[float,Function]]:
     """Solve Stokes system with mixed finite elements for multiplicative noise. 
     
     Return 'time -> velocity' and 'time -> pressure' dictionaries. """
@@ -84,7 +96,7 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
 
         bcs = [DirichletBC(space_disc.mixed_space.sub(0), project(initialCondition(xhat,yhat),space_disc.velocity_space), (1, 2, 3, 4))]
             
-        solve(a == L, up, bcs=bcs, nullspace=space_disc.null)
+        solve(a == L, up, bcs=bcs, nullspace=space_disc.null, solver_parameters=DIRECT_SOLVE_PARAMETERS)
 
         #Mean correction
         mean_p = Constant(assemble( inner(p,1)*dx ))
