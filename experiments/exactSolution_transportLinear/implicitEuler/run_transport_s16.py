@@ -7,7 +7,7 @@ from functools import partial
 
 #add grandparent directory
 import sys
-sys.path.insert(0,'../..')
+sys.path.insert(0,'../../..')
 
 from src.discretisation.space import get_space_discretisation_from_CONFIG, SpaceDiscretisation
 from src.discretisation.time import TimeDiscretisation
