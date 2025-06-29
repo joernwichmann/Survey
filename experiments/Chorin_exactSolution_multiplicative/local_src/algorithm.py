@@ -21,7 +21,7 @@ def exact_pressure(mesh, pressure_space) -> Function:
     expr = x*x + y*y - 2.0/3.0
     return project(expr, pressure_space)
 
-def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
+def Chorin_splitting(space_disc: SpaceDiscretisation,
                            time_grid: list[float],
                            noise_increments: list[int],
                            noise_coefficient: Function,
@@ -30,12 +30,9 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
                            bodyforce2: Function,
                            Reynolds_number: float = 1,
                            Lambda: float = 1) -> tuple[dict[float,Function], dict[float,Function]]:
-    """Solve Stokes system with mixed finite elements for multiplicative noise. 
+    """Solve Stokes system with Chorin splitting. 
     
     Return 'time -> velocity' and 'time -> pressure' dictionaries. """
-
-    u, p = TrialFunctions(space_disc.mixed_space)
-    v, q = TestFunctions(space_disc.mixed_space)
 
     Re = Constant(Reynolds_number)
     tau = Constant(1.0)
@@ -43,16 +40,30 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
     expW = Constant(1.0)
     t = Constant(1.0)
 
-    upold = Function(space_disc.mixed_space)
-    uold, pold = upold.subfunctions
+    u = TrialFunction(space_disc.velocity_space)
+    v = TestFunction(space_disc.velocity_space)
+    uold = Function(space_disc.velocity_space)
+    unew = Function(space_disc.velocity_space)
+    utilde = Function(space_disc.velocity_space)
+
+    p = TrialFunction(space_disc.pressure_space)
+    q = TestFunction(space_disc.pressure_space)
+    pold = Function(space_disc.pressure_space)
+    pnew = Function(space_disc.pressure_space)
+
+    #setup variational form
+    a1 = ( inner(u,v) + 1/Re*tau*inner(grad(u), grad(v)) )*dx
+    L1 = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1,v)*expW + 2*tau*t*inner(bodyforce2,v)*expW + Lambda*dW*inner(uold,v) )*dx
+
+    a2 = inner(grad(p),grad(q))*dx
+    L2 = 1/tau*inner(utilde,grad(q))*dx
+
+    a3 = inner(u,v)*dx
+    L3 = ( inner(utilde,v) - tau*inner(grad(pnew),v) )*dx
+
+    V_basis = VectorSpaceBasis(constant=True)
 
     uold.assign(initial_condition)
-
-    a = ( inner(u,v) + tau*( 1.0/Re*inner(grad(u), grad(v)) - inner(p, div(v)) + inner(div(u), q) ) )*dx
-    L = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1,v)*expW + 2*tau*t*inner(bodyforce2,v)*expW + Lambda*dW*inner(uold,v) )*dx
-
-    up = Function(space_disc.mixed_space)
-    u, p = up.subfunctions
 
     initial_time, time_increments = trajectory_to_incremets(time_grid)
     time = initial_time
@@ -72,8 +83,8 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
     time_to_preError = dict()
 
     exactVelocity = exact_velocity(space_disc.mesh,space_disc.velocity_space)
-    exactPressure= exact_pressure(space_disc.mesh,space_disc.pressure_space)
-    
+    exactPressure = exact_pressure(space_disc.mesh,space_disc.pressure_space)
+
     solError = Function(space_disc.mixed_space)
     velError, preError = solError.subfunctions
 
@@ -95,19 +106,22 @@ def implicitEuler_mixedFEM(space_disc: SpaceDiscretisation,
 
         expNoise = exp(Lambda*accumulatedNoise - Lambda**2/2.0*time)
         expW.assign(expNoise)
-            
-        solve(a == L, up, bcs=space_disc.bcs_mixed, nullspace=space_disc.null)
+        
+        solve(a1 == L1, utilde, bcs=space_disc.bcs_vel)
+        solve(a2 == L2, pnew, nullspace = V_basis)
+        solve(a3 == L3, unew)
 
         #Mean correction
-        mean_p = Constant(assemble( inner(p,1)*dx ))
-        p.dat.data[:] = p.dat.data - Function(space_disc.pressure_space).assign(mean_p).dat.data
+        mean_p = Constant(assemble( inner(pnew,1)*dx ))
+        pnew.dat.data[:] = pnew.dat.data - Function(space_disc.pressure_space).assign(mean_p).dat.data
 
-        time_to_velocity[time] = deepcopy(u)
-        time_to_pressure[time] = deepcopy(p)
+        time_to_velocity[time] = deepcopy(unew)
+        time_to_pressure[time] = deepcopy(pnew)
 
-        upold.assign(up)
+        uold.assign(unew)
+        pold.assign(pnew)
 
-        velError.dat.data[:] = exactVelocity.dat.data*expNoise - uold.dat.data
+        velError.dat.data[:] = exactVelocity.dat.data*expNoise - utilde.dat.data
         preError.dat.data[:] = exactPressure.dat.data*time*expNoise - pold.dat.data
 
         time_to_velError[time] = deepcopy(velError)

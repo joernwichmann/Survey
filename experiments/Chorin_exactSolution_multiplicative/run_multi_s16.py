@@ -32,7 +32,7 @@ from src.postprocess.point_statistics import PointStatistics
 from src.postprocess.increments_check import IncrementCheck
 from src.postprocess.processmanager import ProcessManager
 
-from local_src.algorithm import implicitEuler_mixedFEM
+from local_src.algorithm import Chorin_splitting
 from local_src.multi import noiseCoefficient, initialCondition, bodyforce1, bodyforce2
 
 #load global and lokal configs
@@ -199,7 +199,7 @@ def generate() -> None:
                                                            initial_velocity=initial_velocity,
                                                            bodyforce1=force1,
                                                            bodyforce2=force2,
-                                                           algorithm=implicitEuler_mixedFEM,
+                                                           algorithm=Chorin_splitting,
                                                            sampling_strategy=sampling_strategy)
         runtimes["solving"] += process_time_ns()-time_mark
 
