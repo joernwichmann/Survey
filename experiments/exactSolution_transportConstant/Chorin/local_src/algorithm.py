@@ -127,7 +127,7 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
         exactPressure.dat.data[:] = exactPressure.dat.data - Function(space_disc.pressure_space).assign(mean_exactPressure).dat.data
 
         #compute error
-        velError.dat.data[:] = exactVelocity.dat.data - uold.dat.data
+        velError.dat.data[:] = exactVelocity.dat.data - utilde.dat.data
         preError.dat.data[:] = exactPressure.dat.data*time - pold.dat.data
 
         time_to_velError[time] = deepcopy(velError)
