@@ -69,7 +69,7 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
 
     #variational form: artificial velocity
     a2 = ( inner(u,v) + 1/Re*tau*inner(grad(u), grad(v)) )*dx
-    L2 = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1,v)*(1+W) + 2*tau*t*inner(bodyforce2,v) + tau*inner(noise_projected,v) )*dx
+    L2 = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1,v) + 2*tau*t*inner(bodyforce2,v) + tau*inner(noise_projected,v) )*dx
 
     #variational form: deterministic pressure
     a3 = inner(grad(p),grad(q))*dx
@@ -114,7 +114,7 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
     preErrorSto = Function(space_disc.pressure_space)
     preErrorDet = Function(space_disc.pressure_space)
 
-    velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - uold.dat.data
+    velError.dat.data[:] = exactVelocity.dat.data - uold.dat.data
     preError.dat.data[:] = exactPressureDet.dat.data*time + exactPressureSto.dat.data*dNoise - pold.dat.data
 
     time_to_velError[time] = deepcopy(velError)
@@ -158,7 +158,7 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
         pold.assign(pnew)
 
         #Compute errors
-        velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - utilde.dat.data
+        velError.dat.data[:] = exactVelocity.dat.data - utilde.dat.data
         preError.dat.data[:] = exactPressureDet.dat.data*time + exactPressureSto.dat.data*dNoise - pold.dat.data
         preErrorSto.dat.data[:] = exactPressureSto.dat.data*dNoise - psto.dat.data
         preErrorDet.dat.data[:] = exactPressureDet.dat.data*time - pdet.dat.data
