@@ -7,7 +7,7 @@ from functools import partial
 
 #add grandparent directory
 import sys
-sys.path.insert(0,'../..')
+sys.path.insert(0,'../../..')
 
 from src.discretisation.space import get_space_discretisation_from_CONFIG, SpaceDiscretisation
 from src.discretisation.time import TimeDiscretisation
@@ -33,10 +33,10 @@ from src.postprocess.increments_check import IncrementCheck
 from src.postprocess.processmanager import ProcessManager
 
 from local_src.algorithm import Chorin_splitting
-from local_src.potential import noiseCoefficient, initialCondition, bodyforce1, bodyforce2
+from local_src.multi import noiseCoefficient, initialCondition, bodyforce1, bodyforce2
 
 #load global and lokal configs
-from configs import cfs_potential_s32 as cf
+from configs import cfs_multi_s32 as cf
 from configs import cfs_global as gcf
 
 def generate_one(time_disc: TimeDiscretisation,
