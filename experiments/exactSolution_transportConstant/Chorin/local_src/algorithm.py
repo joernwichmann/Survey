@@ -47,6 +47,7 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
     uold = Function(space_disc.velocity_space)
     unew = Function(space_disc.velocity_space)
     utilde = Function(space_disc.velocity_space)
+    utildeOld = Function(space_disc.velocity_space)
 
     p = TrialFunction(space_disc.pressure_space)
     q = TestFunction(space_disc.pressure_space)
@@ -55,9 +56,10 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
 
     #setup variational form
     uold.assign(project(initialCondition(x,y),space_disc.velocity_space))
+    utildeOld.assign(project(initialCondition(x,y),space_disc.velocity_space))
 
     a1 = ( inner(u,v) + tau/Re*inner(grad(u), grad(v)) - Lambda*dW/2.0*inner(dot(grad(u), as_vector([1,1])), v) )*dx
-    L1 = ( inner(uold,v) - tau/Re*inner(bodyforce1(xhat,yhat),v)+ 2*tau*t*inner(bodyforce2(xhat,yhat),v) + Lambda*dW/2.0*inner(dot(grad(uold), as_vector([1,1])), v) )*dx
+    L1 = ( inner(uold,v) - tau/Re*inner(bodyforce1(xhat,yhat),v)+ 2*tau*t*inner(bodyforce2(xhat,yhat),v) + Lambda*dW/2.0*inner(dot(grad(utildeOld), as_vector([1,1])), v) )*dx
 
     a2 = inner(grad(p),grad(q))*dx
     L2 = 1/tau*inner(utilde,grad(q))*dx
@@ -87,7 +89,7 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
     solError = Function(space_disc.mixed_space)
     velError, preError = solError.subfunctions
 
-    velError.dat.data[:] = exactVelocity.dat.data - uold.dat.data
+    velError.dat.data[:] = exactVelocity.dat.data - utildeOld.dat.data
     preError.dat.data[:] = exactPressure.dat.data*time - pold.dat.data
 
     time_to_velError[time] = deepcopy(velError)
@@ -118,6 +120,7 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
         time_to_pressure[time] = deepcopy(pnew)
 
         uold.assign(unew)
+        utildeOld.assign(utilde)
         pold.assign(pnew)
 
         #update exact solution
@@ -127,7 +130,7 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
         exactPressure.dat.data[:] = exactPressure.dat.data - Function(space_disc.pressure_space).assign(mean_exactPressure).dat.data
 
         #compute error
-        velError.dat.data[:] = exactVelocity.dat.data - utilde.dat.data
+        velError.dat.data[:] = exactVelocity.dat.data - utildeOld.dat.data
         preError.dat.data[:] = exactPressure.dat.data*time - pold.dat.data
 
         time_to_velError[time] = deepcopy(velError)
