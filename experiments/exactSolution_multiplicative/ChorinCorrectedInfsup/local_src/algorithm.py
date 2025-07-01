@@ -21,7 +21,7 @@ def exact_pressure(mesh, pressure_space) -> Function:
     expr = x*x + y*y - 2.0/3.0
     return project(expr, pressure_space)
 
-def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
+def Chorin_splitting_with_pressure_correctionINFSUP(space_disc: SpaceDiscretisation,
                            time_grid: list[float],
                            noise_increments: list[int],
                            noise_coefficient: Function,
@@ -40,28 +40,29 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
     expW = Constant(1.0)
     t = Constant(1.0)
 
+    uMix, pMix = TrialFunctions(space_disc.mixed_space)
+    vMix, qMix = TestFunctions(space_disc.mixed_space)
+
     u = TrialFunction(space_disc.velocity_space)
     v = TestFunction(space_disc.velocity_space)
     uold = Function(space_disc.velocity_space)
     unew = Function(space_disc.velocity_space)
     utilde = Function(space_disc.velocity_space)
-    noise_projected = Function(space_disc.velocity_space)
+    #noise_projected = Function(space_disc.velocity_space)
 
     p = TrialFunction(space_disc.pressure_space)
     q = TestFunction(space_disc.pressure_space)
     pold = Function(space_disc.pressure_space)
     pnew = Function(space_disc.pressure_space)
-    psto = Function(space_disc.pressure_space)
+    #psto = Function(space_disc.pressure_space)
     pdet = Function(space_disc.pressure_space)
 
+    up_projected = Function(space_disc.mixed_space)
+    noise_projected, psto = up_projected.subfunctions
 
-    #variational form: stochastich pressure
-    a0 = inner(grad(p),grad(q))*dx
-    L0 = Lambda*dW/tau*inner(uold,grad(q))*dx
-
-    #variational form: Helmholtz-projected noise
-    a1 = inner(u,v)*dx
-    L1 = ( Lambda*dW/tau*inner(uold,v) - inner(grad(psto),v) )*dx
+    #variational form: Helmholtz-projected noise    
+    a0 = ( inner(uMix,vMix) - pMix*div(vMix) + qMix*div(uMix) )*dx
+    L0 =  Lambda*dW/tau*inner(uold,vMix)*dx
 
     #variational form: artificial velocity
     a2 = ( inner(u,v) + 1/Re*tau*inner(grad(u), grad(v)) )*dx
@@ -132,8 +133,7 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
         expW.assign(expNoise)
             
         #Solve variational forms
-        solve(a0 == L0, psto, nullspace = V_basis)
-        solve(a1 == L1, noise_projected)
+        solve(a0 == L0, up_projected, bcs=space_disc.bcs_mixed, nullspace = space_disc.null)
         solve(a2 == L2, utilde, bcs=space_disc.bcs_vel)
         solve(a3 == L3, pdet, nullspace = V_basis)
         solve(a4 == L4, unew)

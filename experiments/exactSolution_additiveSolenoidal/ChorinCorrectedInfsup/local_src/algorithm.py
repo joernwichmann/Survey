@@ -21,15 +21,14 @@ def exact_pressure(mesh, pressure_space) -> Function:
     expr = x*x + y*y - 2.0/3.0
     return project(expr, pressure_space)
 
-def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
+def Chorin_splitting_with_pressure_correctionINFSUP(space_disc: SpaceDiscretisation,
                            time_grid: list[float],
                            noise_increments: list[int],
                            noise_coefficient: Function,
                            initial_condition: Function,
                            bodyforce1: Function,
                            bodyforce2: Function,
-                           Reynolds_number: float = 1,
-                           Lambda: float = 1)-> tuple[dict[float,Function], dict[float,Function], dict[float,Function], dict[float,Function]]:
+                           Reynolds_number: float = 1)-> tuple[dict[float,Function], dict[float,Function], dict[float,Function], dict[float,Function]]:
     """Solve Stokes system with modified Chorin splitting. 
     
     Return 'time -> velocity', 'time -> total pressure', 'time -> stochastic pressure', and 'time -> deterministic pressure' dictionaries. """
@@ -37,35 +36,36 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
     Re = Constant(Reynolds_number)
     tau = Constant(1.0)
     dW = Constant(1.0)
-    expW = Constant(1.0)
+    W = Constant(1.0)
     t = Constant(1.0)
+
+    uMix, pMix = TrialFunctions(space_disc.mixed_space)
+    vMix, qMix = TestFunctions(space_disc.mixed_space)
 
     u = TrialFunction(space_disc.velocity_space)
     v = TestFunction(space_disc.velocity_space)
     uold = Function(space_disc.velocity_space)
     unew = Function(space_disc.velocity_space)
     utilde = Function(space_disc.velocity_space)
-    noise_projected = Function(space_disc.velocity_space)
+    #noise_projected = Function(space_disc.velocity_space)
 
     p = TrialFunction(space_disc.pressure_space)
     q = TestFunction(space_disc.pressure_space)
     pold = Function(space_disc.pressure_space)
     pnew = Function(space_disc.pressure_space)
-    psto = Function(space_disc.pressure_space)
+    #psto = Function(space_disc.pressure_space)
     pdet = Function(space_disc.pressure_space)
 
+    up_projected = Function(space_disc.mixed_space)
+    noise_projected, psto = up_projected.subfunctions
 
-    #variational form: stochastich pressure
-    a0 = inner(grad(p),grad(q))*dx
-    L0 = Lambda*dW/tau*inner(uold,grad(q))*dx
-
-    #variational form: Helmholtz-projected noise
-    a1 = inner(u,v)*dx
-    L1 = ( Lambda*dW/tau*inner(uold,v) - inner(grad(psto),v) )*dx
+    #variational form: Helmholtz-projected noise    
+    a0 = ( inner(uMix,vMix) - pMix*div(vMix) + qMix*div(uMix) )*dx
+    L0 =  dW/tau*inner(noise_coefficient,vMix)*dx
 
     #variational form: artificial velocity
     a2 = ( inner(u,v) + 1/Re*tau*inner(grad(u), grad(v)) )*dx
-    L2 = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1,v)*expW + 2*tau*t*inner(bodyforce2,v)*expW + tau*inner(noise_projected,v) )*dx
+    L2 = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1,v)*(1+W) + 2*tau*t*inner(bodyforce2,v) + tau*inner(noise_projected,v) )*dx
 
     #variational form: deterministic pressure
     a3 = inner(grad(p),grad(q))*dx
@@ -82,7 +82,6 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
     initial_time, time_increments = trajectory_to_incremets(time_grid)
     time = initial_time
     accumulatedNoise = 0
-    expNoise = exp(Lambda*accumulatedNoise - Lambda**2/2.0*time)
     dNoise = 0
 
     #handling of approximate solution
@@ -110,8 +109,8 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
     preErrorSto = Function(space_disc.pressure_space)
     preErrorDet = Function(space_disc.pressure_space)
 
-    velError.dat.data[:] = exactVelocity.dat.data*expNoise - uold.dat.data
-    preError.dat.data[:] = exactPressure.dat.data*time*expNoise - pold.dat.data
+    velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - uold.dat.data
+    preError.dat.data[:] = exactPressure.dat.data*time - pold.dat.data
 
     time_to_velError[time] = deepcopy(velError)
     time_to_preError[time] = deepcopy(preError)
@@ -121,19 +120,16 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
     for index in tqdm(range(len(time_increments))):
         dNoise = noise_increments[index]
         accumulatedNoise += dNoise
+        W.assign(accumulatedNoise)
         dW.assign(dNoise)
 
         dtime = time_increments[index]
         time += dtime
         tau.assign(dtime)
         t.assign(time)
-
-        expNoise = exp(Lambda*accumulatedNoise - Lambda**2/2.0*time)
-        expW.assign(expNoise)
             
         #Solve variational forms
-        solve(a0 == L0, psto, nullspace = V_basis)
-        solve(a1 == L1, noise_projected)
+        solve(a0 == L0, up_projected, bcs=space_disc.bcs_mixed, nullspace = space_disc.null)
         solve(a2 == L2, utilde, bcs=space_disc.bcs_vel)
         solve(a3 == L3, pdet, nullspace = V_basis)
         solve(a4 == L4, unew)
@@ -156,10 +152,10 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
         pold.assign(pnew)
 
         #Compute errors
-        velError.dat.data[:] = exactVelocity.dat.data*expNoise - utilde.dat.data
-        preError.dat.data[:] = exactPressure.dat.data*time*expNoise - pold.dat.data
+        velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - utilde.dat.data
+        preError.dat.data[:] = exactPressure.dat.data*time - pold.dat.data
         preErrorSto.dat.data[:] = -1.0*psto.dat.data
-        preErrorDet.dat.data[:] = exactPressure.dat.data*time*expNoise - pdet.dat.data
+        preErrorDet.dat.data[:] = exactPressure.dat.data*time - pdet.dat.data
 
         time_to_velError[time] = deepcopy(velError)
         time_to_preError[time] = deepcopy(preError)

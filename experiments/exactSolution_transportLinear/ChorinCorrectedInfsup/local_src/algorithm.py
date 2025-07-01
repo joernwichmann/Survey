@@ -19,14 +19,14 @@ DIRECT_SOLVE_PARAMETERS = {'snes_max_it': 120,
            "mat_mumps_icntl_24": 1,
            }
 
-def Chorin_splitting(space_disc: SpaceDiscretisation,
+def Chorin_splitting_with_pressure_correctionINFSUP(space_disc: SpaceDiscretisation,
                            time_grid: list[float],
                            noise_increments: list[int],
                            Reynolds_number: float = 1,
-                           Lambda: float = 1)  -> tuple[dict[float,Function], dict[float,Function]]:
-    """Solve Stokes system with Chorin splitting. 
+                           Lambda: float = 1) -> tuple[dict[float,Function], dict[float,Function], dict[float,Function], dict[float,Function]]:
+    """Solve Stokes system with modified Chorin splitting. 
     
-    Return 'time -> velocity' and 'time -> pressure' dictionaries. """
+    Return 'time -> velocity', 'time -> total pressure', 'time -> stochastic pressure', and 'time -> deterministic pressure' dictionaries. """
 
     Re = Constant(Reynolds_number)
     tau = Constant(1.0)
@@ -44,58 +44,83 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
     x, y = SpatialCoordinate(space_disc.mesh)
     xhat, yhat = transformation(x,y,expW)
 
+    uMix, pMix = TrialFunctions(space_disc.mixed_space)
+    vMix, qMix = TestFunctions(space_disc.mixed_space)
+
     u = TrialFunction(space_disc.velocity_space)
     v = TestFunction(space_disc.velocity_space)
     uold = Function(space_disc.velocity_space)
     unew = Function(space_disc.velocity_space)
     utilde = Function(space_disc.velocity_space)
     utildeOld = Function(space_disc.velocity_space)
+    #noise_projected = Function(space_disc.velocity_space)
 
     p = TrialFunction(space_disc.pressure_space)
     q = TestFunction(space_disc.pressure_space)
     pold = Function(space_disc.pressure_space)
     pnew = Function(space_disc.pressure_space)
+    #psto = Function(space_disc.pressure_space)
+    pdet = Function(space_disc.pressure_space)
+
+    up_projected = Function(space_disc.mixed_space)
+    noise_projected, psto = up_projected.subfunctions
 
     #setup variational form
     uold.assign(project(initialCondition(x,y),space_disc.velocity_space))
     utildeOld.assign(project(initialCondition(x,y),space_disc.velocity_space))
 
-    a1 = ( inner(u,v) + tau*( 1.0/Re*inner(grad(u), grad(v)) ) - Lambda*dW/2.0*inner(dot(grad(u), as_vector([x,y])), v) )*dx
-    L1 = ( inner(uold,v) - 1.0/Re*tau*inner(bodyforce1(xhat,yhat),v)*(exp_2W)+ 2*tau*t*inner(bodyforce2(xhat,yhat),v)*(exp_1W) + Lambda*dW/2.0*inner(dot(grad(utildeOld), as_vector([x,y])), v) )*dx
+    #variational form: Helmholtz-projected noise  
+    a0 = ( inner(uMix,vMix) - pMix*div(vMix) + qMix*div(uMix) )*dx
+    L0 = Lambda*dW/(tau*2.0)*inner(dot(grad(utildeOld), as_vector([x,y])), vMix)*dx
 
-    a2 = inner(grad(p),grad(q))*dx
-    L2 = 1/tau*inner(utilde,grad(q))*dx
+    #variational form: artificial velocity
+    a2 = ( inner(u,v) + 1/Re*tau*inner(grad(u), grad(v)) - Lambda*dW/2.0*inner(dot(grad(u), as_vector([x,y])), v) )*dx
+    L2 = ( inner(uold,v) - tau/Re*inner(bodyforce1(xhat,yhat),v)*(exp_2W)+ 2*tau*t*inner(bodyforce2(xhat,yhat),v)*(exp_1W) + tau*inner(noise_projected,v) )*dx
 
-    a3 = inner(u,v)*dx
-    L3 = ( inner(utilde,v) - tau*inner(grad(pnew),v) )*dx
+    #variational form: deterministic pressure
+    a3 = inner(grad(p),grad(q))*dx
+    L3 = 1/tau*inner(utilde,grad(q))*dx
+
+    #variational form: velocity
+    a4 = inner(u,v)*dx
+    L4 = ( inner(utilde,v) - tau*inner(grad(pdet),v) )*dx
 
     V_basis = VectorSpaceBasis(constant=True)
 
-    #approximate solution
+    #handling of approximate solution
     time_to_velocity = dict()
     time_to_pressure = dict()
+    time_to_stochastic_pressure = dict()
+    time_to_deterministic_pressure = dict()
 
     time_to_velocity[time] = deepcopy(uold)
-    time_to_pressure[time] = deepcopy(pold)
+    time_to_pressure[time] = deepcopy(pnew)
+    time_to_stochastic_pressure[time] = deepcopy(pnew)
+    time_to_deterministic_pressure[time] = deepcopy(pnew)
 
-    #handling of exact solution
+    #handling of exact solution and errors
     time_to_velError = dict()
     time_to_preError = dict()
+    time_to_preErrorSto = dict()
+    time_to_preErrorDet = dict()
 
     exactVelocity = project(exact_velocity(xhat,yhat),space_disc.velocity_space)
     exactPressure = project(exact_pressure(xhat,yhat),space_disc.pressure_space)
     mean_exactPressure = Constant(assemble( inner(exactPressure,1)*dx ))
     exactPressure.dat.data[:] = exactPressure.dat.data - Function(space_disc.pressure_space).assign(mean_exactPressure).dat.data
 
-    
     solError = Function(space_disc.mixed_space)
     velError, preError = solError.subfunctions
+    preErrorSto = Function(space_disc.pressure_space)
+    preErrorDet = Function(space_disc.pressure_space)
 
     velError.dat.data[:] = exactVelocity.dat.data - utildeOld.dat.data
     preError.dat.data[:] = exactPressure.dat.data*time - pold.dat.data
 
     time_to_velError[time] = deepcopy(velError)
     time_to_preError[time] = deepcopy(preError)
+    time_to_preErrorSto[time] = deepcopy(preError)
+    time_to_preErrorDet[time] = deepcopy(preError)
 
     for index in tqdm(range(len(time_increments))):
         dNoise = noise_increments[index]
@@ -111,17 +136,26 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
         t.assign(time)
 
         bcs = [DirichletBC(space_disc.velocity_space, project(initialCondition(xhat,yhat),space_disc.velocity_space), (1, 2, 3, 4))]
-        
-        solve(a1 == L1, utilde, bcs=bcs, solver_parameters=DIRECT_SOLVE_PARAMETERS)
-        solve(a2 == L2, pnew, nullspace = V_basis)
-        solve(a3 == L3, unew)
+            
+        #Solve variational forms
+        solve(a0 == L0, up_projected, bcs=space_disc.bcs_mixed, nullspace = space_disc.null)
+        solve(a2 == L2, utilde, bcs=bcs, solver_parameters=DIRECT_SOLVE_PARAMETERS)
+        solve(a3 == L3, pdet, nullspace = V_basis)
+        solve(a4 == L4, unew)
 
         #Mean correction
-        mean_p = Constant(assemble( inner(pnew,1)*dx ))
-        pnew.dat.data[:] = pnew.dat.data - Function(space_disc.pressure_space).assign(mean_p).dat.data
+        mean_psto = Constant(assemble( inner(psto,1)*dx ))
+        psto.dat.data[:] = psto.dat.data - Function(space_disc.pressure_space).assign(mean_psto).dat.data
+        mean_pdet = Constant(assemble( inner(pdet,1)*dx ))
+        pdet.dat.data[:] = pdet.dat.data - Function(space_disc.pressure_space).assign(mean_pdet).dat.data
+
+        #Compute total pressure
+        pnew.dat.data[:] = pdet.dat.data + psto.dat.data
 
         time_to_velocity[time] = deepcopy(unew)
         time_to_pressure[time] = deepcopy(pnew)
+        time_to_stochastic_pressure[time] = deepcopy(psto)
+        time_to_deterministic_pressure[time] = deepcopy(pdet)
 
         uold.assign(unew)
         utildeOld.assign(utilde)
@@ -136,8 +170,12 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
         #compute error
         velError.dat.data[:] = exactVelocity.dat.data - utildeOld.dat.data
         preError.dat.data[:] = exactPressure.dat.data*time - pold.dat.data
+        preErrorSto.dat.data[:] = psto.dat.data
+        preErrorDet.dat.data[:] = exactPressure.dat.data*time - pdet.dat.data
 
         time_to_velError[time] = deepcopy(velError)
         time_to_preError[time] = deepcopy(preError)
+        time_to_preErrorSto[time] = deepcopy(preErrorSto)
+        time_to_preErrorDet[time] = deepcopy(preErrorDet)
 
-    return time_to_velocity, time_to_pressure, time_to_velError, time_to_preError
+    return time_to_velocity, time_to_pressure, time_to_velError, time_to_preError, time_to_stochastic_pressure, time_to_deterministic_pressure, time_to_preErrorSto, time_to_preErrorDet
