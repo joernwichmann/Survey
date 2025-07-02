@@ -124,7 +124,7 @@ def Chorin_splitting(space_disc: SpaceDiscretisation,
         pold.assign(pnew)
 
         velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - utilde.dat.data
-        preError.dat.data[:] = exactPressureDet.dat.data*time + exactPressureSto.dat.data*dNoise - pold.dat.data
+        preError.dat.data[:] = exactPressureDet.dat.data*time + exactPressureSto.dat.data*(dNoise/dtime) - pold.dat.data
 
         time_to_velError[time] = deepcopy(velError)
         time_to_preError[time] = deepcopy(preError)

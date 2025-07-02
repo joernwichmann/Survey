@@ -159,8 +159,8 @@ def Chorin_splitting_with_pressure_correction(space_disc: SpaceDiscretisation,
 
         #Compute errors
         velError.dat.data[:] = exactVelocity.dat.data*(1+accumulatedNoise) - utilde.dat.data
-        preError.dat.data[:] = exactPressureDet.dat.data*time + exactPressureSto.dat.data*dNoise - pold.dat.data
-        preErrorSto.dat.data[:] = exactPressureSto.dat.data*dNoise - psto.dat.data
+        preError.dat.data[:] = exactPressureDet.dat.data*time + exactPressureSto.dat.data*(dNoise/dtime) - pold.dat.data
+        preErrorSto.dat.data[:] = exactPressureSto.dat.data*(dNoise/dtime) - psto.dat.data
         preErrorDet.dat.data[:] = exactPressureDet.dat.data*time - pdet.dat.data
 
         time_to_velError[time] = deepcopy(velError)
