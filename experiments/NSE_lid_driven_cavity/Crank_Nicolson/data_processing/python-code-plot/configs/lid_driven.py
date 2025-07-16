@@ -17,7 +17,7 @@ DATA_SOURCE = "refinement_9.csv"
 OUTPUT_LOCATION = f"output/{EXPERIMENT_NAME}/kinetic_energy/"
 
 #### stochatic
-NUMBER_SAMPLES = 2
+NUMBER_SAMPLES = 100
 
 #### stationary
 STATIONARY_TIME = {1: 0.4, 2: 0.4, 3: 0.4}
