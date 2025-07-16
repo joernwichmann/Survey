@@ -57,16 +57,16 @@ if __name__=="__main__":
     ##legend
     # Create dummy Line2D objects for legend
     legendMarkers = [Line2D([0], [0.1], color=cf.COLOURS_MEAN[expID], linewidth = cf.LINEWIDTH_MEAN) for expID in cf.EXPERIMENTS.keys()]
-    legendPvalues = [f"p = {cf.P_VALUE[expID]}" for expID in cf.EXPERIMENTS.keys()]
-    #legendPvalues.append("det")
+    legendPvalues = [f"{cf.P_VALUE[expID]}" for expID in cf.EXPERIMENTS.keys()]
+    legendPvalues.append("deterministic")
     if cf.LINEAR_PLOT:
         print(f'\tGenerating linear plot of histogram')
         plt.figure()
         for expID in cf.EXPERIMENTS.keys():
             sns.histplot(all_data[expID], bins="auto", stat="density", kde=True, color=cf.COLOURS_MEAN[expID], log_scale=(cf.HIST_XAXIS_LOG,False))
-            #plt.vlines(x=cf.STATIONARY_ENERGY[noise],ymin=0,ymax=cf.YMAX[noise],colors="black",linestyles="solid")
+            #plt.vlines(x=cf.STATIONARY_ENERGY[expID],ymin=0,ymax=cf.YMAX[expID],colors="black",linestyles="solid")
         plt.xlabel("Kinetic energy")
-        #plt.legend(legendMarkers,legendPvalues)
+        plt.legend(legendMarkers,legendPvalues)
         plt.tight_layout()
         plt.savefig(cf.OUTPUT_LOCATION+f"hist-{cf.EXPERIMENT_NAME}-all.{cf.HIST_FILEFORMAT}",dpi=cf.HIST_DPI)
         plt.close()

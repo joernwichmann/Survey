@@ -49,13 +49,13 @@ if __name__=="__main__":
         file_location = cf.ROOT_LOCATION + cf.EXPERIMENTS[expID] + cf.DET_LOCATION + cf.DATA_SOURCE
         complete_data = read_datafile(file_location)
         time, L1, L2, Linf, SD = organize_output(complete_data)
-        plt.plot(time,L2,color = cf.BLACK,linestyle=cf.LINESTYLES_DET[expID],linewidth=1,alpha=cf.LINEOPACITY_MEAN)
+        plt.plot(time,L2,color = cf.BLACK,linestyle="solid",linewidth=1,alpha=cf.LINEOPACITY_MEAN)
         
     # styling the plot
     plt.ylabel("Kinetic energy")
     plt.xlabel("Time")
     plt.yscale(cf.TRAJ_YAXIS_SCALE)
-    #plt.xlim(0.0,1.0)
+    
     plt.tight_layout()
     
     ##legend
@@ -65,11 +65,13 @@ if __name__=="__main__":
     for expID in cf.EXPERIMENTS.keys():
         #add stochastic
         legendMarkers.append(Line2D([0], [0.1], color=cf.COLOURS_MEAN[expID], linewidth = cf.LINEWIDTH_MEAN))
-        legendPvalues.append(f"p = {cf.P_VALUE[expID]}: sto")
-        #add deterministic
-        legendMarkers.append(Line2D([0], [0.1], color=cf.BLACK, linestyle=cf.LINESTYLES_DET[expID], linewidth = cf.LINEWIDTH_MEAN))
-        legendPvalues.append(f"p = {cf.P_VALUE[expID]}: det")
-    #plt.legend(legendMarkers,legendPvalues)
+        legendPvalues.append(f"{cf.P_VALUE[expID]}")
+    #add deterministic
+    legendMarkers.append(Line2D([0], [0.1], color=cf.BLACK, linestyle="solid", linewidth = 1,alpha=cf.LINEOPACITY_MEAN))
+    legendPvalues.append(f"deterministic")
+    plt.legend(legendMarkers,legendPvalues)
+
+    plt.xlim(-0.1,20.0)
 
     plt.savefig(cf.OUTPUT_LOCATION + f"{cf.EXPERIMENT_NAME}-all-trajectories.{cf.TRAJ_FILEFORMAT}",dpi=cf.TRAJ_DPI)
     plt.close()
