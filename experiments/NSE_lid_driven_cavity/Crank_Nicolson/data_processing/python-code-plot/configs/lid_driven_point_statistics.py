@@ -7,21 +7,22 @@ EXPERIMENTS = {1: f"{EXPERIMENT_NAME}_additive", 2: f"{EXPERIMENT_NAME}_multipli
 P_VALUE = {1: "additive", 2: "multiplicative", 3: "transport"}
 
 #### locations 
+POINT = "p1"
 ROOT_LOCATION = "../../point_statistic_results/"
-DET_LOCATION = "/deterministic/p1/mean"
-MEAN_LOCATION = "/p1/mean"
-IND_LOCATION = "/p1/seed"
+DET_LOCATION = f"/deterministic/{POINT}/mean"
+MEAN_LOCATION = f"/{POINT}/mean"
+IND_LOCATION = f"/{POINT}/seed"
 DATA_SOURCE = "/refinement_9.csv"
 
 #### output 
-OUTPUT_LOCATION = f"output/{EXPERIMENT_NAME}/point_statistics/"
+OUTPUT_LOCATION = f"output/{EXPERIMENT_NAME}/point_statistics/{POINT}/"
 
 #### stochatic
 NUMBER_SAMPLES = 100
 
 #### stationary
 #STATIONARY_TIME = {1: 0.13, 2: 0.32, 3: 0.13}
-STATIONARY_TIME = {1: 0.4, 2: 0.4, 3: 0.4}
+STATIONARY_TIME = {1: 19.0, 2: 19.0, 3: 19.0}
 
 #### plotting configs
 # colours
@@ -51,8 +52,8 @@ LINESTYLE_SD = (0, (1, 1))
 LINEWIDTH_INDIVIDUAL = 0.1
 LINEOPACITY_INDIVIDUAL = 1
 
-LABEL_FONTSIZE = 10
-TICK_FONTSIZE = 10
+LABEL_FONTSIZE = 15
+TICK_FONTSIZE = 15
 
 LINESTYLES_DET = {1: "dotted", 2: "dashed", 3: "dashdot"}
 
