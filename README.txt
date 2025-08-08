@@ -1,39 +1,34 @@
-This repository contains code that was used for the numerical experiments of the article:
-	https://arxiv.org/abs/2412.14316
+This repository contains the codes that were used for the numerical experiments of the article:
+	https://arxiv.org/abs/2508.05564
 
+--------------------------------------------------------------------------------------------
 SETTING UP THE SIMULATION:
 In order to run the simulations one first needs to install the finite element package
-	FIREDRAKE	https://www.firedrakeproject.org/
+	FIREDRAKE (Version:2025.4.1)		https://www.firedrakeproject.org/
 After successful installation, start the virtual environment provided by firedrake:
-	Navigate to the firedrake directory and use "source bin/activate" in the terminal. 
+	Navigate to the firedrake directory and use ". venv-firedrake/bin/activate" in the terminal. 
 Next, install the package 	
-	TQDM		https://tqdm.github.io/
+	TQDM (Version: 4.67.1)			https://tqdm.github.io/
 This can be done by running "pip install tqdm"
 The setup is complete and the virtual environment can be deactivated by running "deactivate"
 
-SETTING UP DATA VISUALISATION:
-Install the packages
-	pandas		https://pypi.org/project/pandas/
-	seaborn		https://pypi.org/project/seaborn/
-This can be done by running "pip install pandas" and "pip install seaborn", respectively.
-
 RUNNING THE SIMULATION:
 We first need to start firedrake's virtual environment:
-	Navigate to the firedrake directory and use "source bin/activate" in the terminal. 
-Now, navigate to the directory 'gen-Stokes'.
-The numerical simulations are started by running:
-	python3 run_lid_driven_exp{1,2,3}.py
-	python3 run_p_variation_exp{1,2,3}.py
-After completion, we can deactivate the virtual environment.
+	Navigate to the firedrake directory and use ". venv-firedrake/bin/activate" in the terminal. 
+Now, navigate to the directory 'Survey/experiments'. This folder contains the codes not only for running the experiments of the article but many other experiments too.
+To repeat one of the numerical simulations, navigate to the end of the directory structure and execute "python3 run_{'to be filled appropriately'}". 
+	
+--------------------------------------------------------------------------------------------
+The visualisation of the 'lid-driven cavity' experiment uses the following:
+
+SETTING UP DATA VISUALISATION:
+Install the packages
+	pandas (Version: 2.1.4+dfsg)		https://pypi.org/project/pandas/
+	seaborn	(Version: 0.13.2)		https://pypi.org/project/seaborn/
+This can be done by running "pip install pandas" and "pip install seaborn", respectively.
 	
 RUNNING DATA VISUALISATION:
-First, we need to process the data: 
-	Navigate to 'data_processing/python-code-processing'.
+	Navigate to 'Survey/experiments/NSE_lid_driven_cavity/Crank_Nicolson/data_processing/python-code-plot'.
 	Select the data that should be processed by specifying the imported configs.
 	Run in terminal: 
-		python3 process_increment.py
-After the processing, we visualise the data:
-	Navigate to 'data_processing/python-code-plot'.
-	Select the data that should be processed by specifying the imported configs.
-	Run in terminal: 
-		generate-{histogramm-plot,histo-plot-point-statistics,inc-plot,trajectory-plot,traj-point-statistics}.py
+		generate-{histogramm-plot,histo-plot-point-statistics,trajectory-plot,traj-point-statistics}.py
